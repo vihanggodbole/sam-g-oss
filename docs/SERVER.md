@@ -532,6 +532,12 @@ if err := api.SetAllowedOrigins([]string{"http://localhost:5173"}); err != nil {
 // Mount api at /v1/ alongside your page, or serve it directly.
 ```
 
+A Go host can register its own routes with `api.Handle(pattern, handler)` before
+serving. These routes share the built-in API's Host/Origin checks and preflight
+handling. Patterns follow `http.ServeMux`; the host handler owns its body format,
+size limits and response contract. A handler mounted **beside** `api` does not
+inherit this protection. Keep one shared guard rather than copying its rules.
+
 Only trusted origins receive an echoed `Access-Control-Allow-Origin`, never `*`. Preflight supports the API's GET/POST/PUT/PATCH/DELETE methods and Content-Type, Idempotency-Key, Last-Event-ID and Accept headers. Cookie-authenticated CORS is not enabled. Unknown origins, cross-site requests without a trusted Origin, and untrusted Host values get `403 forbidden_origin`. A host invoking ServeHTTP without net/http's listener context must explicitly configure its browser origin.
 
 **An allowed origin can operate the entire coding API and explicitly read any OS-readable regular text file, including sensitive files.** This is protection against unintended web-page access, not user authentication or multi-user isolation. Trust only frontends you control; do not expose the unauthenticated service publicly.

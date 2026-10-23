@@ -58,6 +58,13 @@ func New(rt *sam.Runtime) *Server {
 	return s
 }
 
+// Handle registers a host-owned route behind the same Host/Origin checks as
+// the built-in API. Call before serving. Patterns and conflicts follow
+// http.ServeMux.Handle; the handler owns its body format, limits and responses.
+func (s *Server) Handle(pattern string, handler http.Handler) {
+	s.mux.Handle(pattern, handler)
+}
+
 // ServeHTTP accepts same-origin browsers and explicitly trusted frontends.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !s.browserAccess(w, r) {
