@@ -41,5 +41,4 @@ loopback, SSH or restricted Tailscale access. See
 
 The Go module is `github.com/vihanggodbole/sam-g-oss`. Until a release is published,
 use the local `replace` setup in the [embedding guide](docs/README.md#embed-the-go-core).
-No project license has been selected. Do not assume an open-source license grant
-merely from access to this source.
+Released under the [MIT License](LICENSE).
