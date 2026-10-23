@@ -1,0 +1,51 @@
+{
+  "server": {
+    "listen": "127.0.0.1:8080"
+  },
+  "database_path": "~/.sam-g/sessions.db",
+  "auth": {
+    "database_path": "~/.sam-g/auth/auth.db",
+    "openai": {
+      "agent_name": "sam-g"
+    },
+    "github_copilot": {}
+  },
+  "providers": {
+    "openai": {
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY"
+    },
+    "chatgpt": {
+      "auth": "openai-chatgpt"
+    },
+    "copilot": {
+      "auth": "github-copilot"
+    }
+  },
+  "models": {
+    "chatgpt": {
+      "provider": "chatgpt",
+      "model_id": "REPLACE-with-a-model-your-ChatGPT-plan-offers",
+      "context_tokens": 128000,
+      "reasoning_efforts": ["low", "medium", "high"],
+      "reasoning_summaries": true
+    },
+    "copilot": {
+      "provider": "copilot",
+      "model_id": "REPLACE-with-a-Copilot-model-that-speaks-Responses",
+      "context_tokens": 128000
+    },
+    "summary": {
+      "provider": "openai",
+      "model_id": "gpt-4.1-mini",
+      "context_tokens": 128000
+    }
+  },
+  "defaults": {
+    "model": "chatgpt",
+    "account": "personal",
+    "compaction": {
+      "model": "summary"
+    }
+  }
+}

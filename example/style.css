@@ -1,0 +1,79 @@
+:root { color-scheme: light; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; color: #172018; background: #efeee8; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1180px; margin: 36px auto; padding: 0 18px; }
+h1 { font-size: clamp(1.7rem, 5vw, 2.5rem); letter-spacing: -.06em; margin: 12px 0; }
+h2 { font-size: 1rem; margin: 0 0 14px; text-transform: uppercase; }
+p { line-height: 1.6; }
+a { color: #164b8b; }
+.tag { font-size: .75rem; font-weight: bold; letter-spacing: .09em; }
+section { margin: 22px 0; padding: 20px; border: 2px solid #172018; background: #fff; box-shadow: 5px 5px 0 #c4c9bd; }
+button, select, textarea, input { border: 2px solid #172018; border-radius: 0; font: inherit; padding: 10px 12px; }
+button { background: #dcebaa; cursor: pointer; font-weight: bold; }
+button:hover:not(:disabled) { background: #c5dc7e; }
+button:disabled, select:disabled { opacity: .5; cursor: not-allowed; }
+:focus-visible { outline: 3px solid #245fcc; outline-offset: 3px; }
+.buttons, .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.toolbar select { flex: 1; min-width: 160px; max-width: 100%; background: #fff; }
+.hint, footer { color: #4c574a; font-size: .78rem; line-height: 1.6; }
+#messages { min-height: 200px; max-height: 460px; overflow-y: auto; border: 2px solid #172018; padding: 16px; background: #f5f5f0; }
+#empty { color: #667060; font-size: .85rem; }
+.message { border: 1px solid #7a8374; margin: 0 0 14px; padding: 12px; background: #fff; overflow-wrap: anywhere; }
+.message.user { background: #e6eecf; margin-left: 30px; }
+.message.assistant { margin-right: 30px; }
+.message strong { display: block; font-size: .7rem; text-transform: uppercase; margin-bottom: 8px; }
+.message p { white-space: pre-wrap; margin: 0; font-size: .9rem; }
+#phase { font-size: .8rem; }
+#composer label { display: block; margin-bottom: 8px; }
+textarea { width: 100%; resize: vertical; margin-bottom: 10px; background: #fff; }
+#stop, #logout, .login-card button { background: #fff; }
+#login-form { margin-top: 16px; }
+#account-name { min-width: 130px; flex: 1; background: #fff; }
+.login-card { border: 2px solid #172018; background: #f5f5f0; padding: 14px; margin-top: 12px; }
+.login-card strong, .device-code { display: block; margin-bottom: 10px; }
+.login-card a { display: inline-block; margin: 8px 14px 8px 0; }
+.device-code { font-size: 1.5rem; letter-spacing: .12em; background: #dcebaa; padding: 12px; width: fit-content; user-select: all; }
+.session-account-settings { margin-bottom: 8px; }
+.workspace-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 22px; align-items: start; }
+.workspace-layout section { margin-top: 0; min-width: 0; }
+#sessions { display: grid; gap: 8px; max-height: 340px; overflow-y: auto; margin-bottom: 20px; }
+.session-choice { text-align: left; background: #fff; overflow-wrap: anywhere; }
+.session-choice[aria-current="true"] { background: #dcebaa; box-shadow: inset 4px 0 #172018; }
+.session-choice span { display: block; margin-top: 5px; font-size: .7rem; font-weight: normal; }
+.new-session { border-top: 2px solid #172018; padding-top: 14px; }
+summary { cursor: pointer; font-weight: bold; }
+#new-session label:not(.check) { display: block; margin-top: 14px; margin-bottom: 6px; font-size: .8rem; }
+#new-session input:not([type="checkbox"]), #new-session select { width: 100%; min-width: 0; background: #fff; }
+#models { margin-top: 8px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: .8rem; margin-top: 14px; }
+.check input { width: 18px; height: 18px; margin: 0; accent-color: #486b17; }
+.tool-settings .check { margin-top: 0; }
+.warning { border-left: 3px solid #8b4015; padding-left: 10px; font-size: .75rem; line-height: 1.55; color: #723711; }
+#session-info { white-space: pre-wrap; overflow-wrap: anywhere; }
+.message.tool { background: #f0eee5; font-size: .8rem; }
+.message.tool pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0 0; font: inherit; max-height: 300px; overflow-y: auto; }
+.message.failed { border: 2px solid #8b4015; background: #fff1d7; }
+#turn-failures { max-height: 300px; overflow: auto; }
+#turn-failures pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: .78rem; }
+@media (max-width: 850px) { .workspace-layout { grid-template-columns: 1fr; gap: 0; } #sessions { max-height: 190px; } }
+.section-message { border: 2px solid #8b4015; background: #fff1d7; padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.chat-panel > details { margin: 16px 0; border-top: 2px solid #172018; padding-top: 12px; }
+#stream-status { font-size: .7rem; font-weight: normal; }
+#live { max-height: 400px; overflow-y: auto; }
+.live-card { border-style: dashed; background: #fffce9; }
+.live-card pre, #inspection, #settings-json { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: .78rem; }
+#inspection, #settings-json { max-height: 450px; overflow: auto; border: 1px solid #7a8374; background: #f5f5f0; padding: 12px; }
+#usage { white-space: pre-wrap; }
+.session-actions { margin: 12px 0; }
+#recovery { border: 2px solid #8b4015; padding: 10px; margin-bottom: 18px; }
+#recovery button { margin-top: 10px; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+#settings-form label:not(.check), #model-form label:not(.check), #steering-form label { display: block; margin: 12px 0 6px; font-size: .8rem; }
+#settings-form input:not([type=checkbox]), #settings-form select, #model-form input:not([type=checkbox]), #model-form select { width: 100%; min-width: 0; background: #fff; }
+.setting-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tool-checks { display: flex; flex-wrap: wrap; gap: 12px; }
+#settings-form button, #model-form button { margin-top: 14px; }
+#steering-list { font-size: .8rem; overflow-wrap: anywhere; padding-left: 20px; }
+#inspect-kind { min-width: 160px; }
+[hidden] { display: none !important; }
+@media (max-width: 520px) { main { margin-top: 20px; } section { padding: 14px; } .toolbar select { flex-basis: 100%; } .message.user, .message.assistant { margin-left: 0; margin-right: 0; } }

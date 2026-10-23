@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="An offline, illustrated walk through sam-g: a small Go library for persistent agent work, with an optional remote server.">
+  <title>A small world of sam-g</title>
+  <link rel="stylesheet" href="explore.css">
+  <script defer src="explore.js"></script>
+</head>
+<body>
+  <a class="skip" href="#departure">Skip to the illustrated trail</a>
+  <header class="masthead">
+    <a class="wordmark" href="README.md" aria-label="sam-g README"><span aria-hidden="true">s.</span> sam-g</a>
+    <span class="edition">A FIELD GUIDE / 01</span>
+    <div class="header-actions"><a href="README.md">Read the docs <span aria-hidden="true">↗</span></a><button id="motion" type="button" aria-pressed="false">Pause motion</button></div>
+  </header>
+
+  <main>
+    <div class="introduction">
+      <p class="eyebrow"><span class="seed" aria-hidden="true"></span> A LOCAL, INTERACTIVE ILLUSTRATION</p>
+      <h1>A small world.<br>A long-running idea.</h1>
+      <p class="lede">Leave a task with a trusted machine.<br>Close your laptop. Come back to the story.</p>
+      <p class="intro-note">Meet <strong>sam-g</strong>, a little Go library that keeps agent work moving.<br>Follow the trail. Try the levers. Nothing here runs a real agent.</p>
+      <a class="trail-link" href="#departure">Take a little walk <span aria-hidden="true">↓</span></a>
+      <svg class="hero-sprig" viewBox="0 0 110 170" role="img" aria-labelledby="sprig-title"><title id="sprig-title">A seedling growing beside the trail</title><path d="M54 158Q65 85 48 21M57 117Q34 103 23 82M59 84Q85 67 89 42" fill="none" stroke="#456449" stroke-width="3"/><path d="M49 47Q16 27 31 6Q65 11 49 47M57 117Q18 125 16 86Q47 77 57 117M64 82Q105 83 95 42Q67 43 64 82" fill="#9bb58b"/><ellipse cx="51" cy="160" rx="39" ry="5" fill="#d9dfc9"/></svg>
+    </div>
+
+    <nav class="trail-map" aria-label="Trail landmarks">
+      <span class="map-label">THE TRAIL</span>
+      <a href="#departure" aria-current="location"><span>01</span> Set off</a>
+      <a href="#workshop"><span>02</span> Tools</a>
+      <a href="#crossroads"><span>03</span> Guide</a>
+      <a href="#archive"><span>04</span> Remember</a>
+      <a href="#nightshift"><span>05</span> Keep on</a>
+      <a href="#return"><span>06</span> Return</a>
+    </nav>
+
+    <noscript><p class="no-script">The trail and explanations work without JavaScript. To try the simulated levers, enable JavaScript. No model or network calls are made.</p></noscript>
+
+    <div class="world" id="world">
+      <!-- One continuous canvas. HTML alongside it supplies all controls and explanations. -->
+      <svg class="world-art" width="1000" height="4320" role="img" aria-labelledby="world-title world-description">
+        <title id="world-title">The sam-g trail: from your laptop to a working machine and back</title>
+        <desc id="world-description">A continuous winding path connects a cottage workshop, five tool benches, two independent session tracks, an archive with a summary desk, a greenhouse dev server, and a dock for saved events. Try the adjacent buttons to change the illustration. All activity is simulated.</desc>
+        <defs>
+          <pattern id="water" width="40" height="24" patternUnits="userSpaceOnUse"><path d="M3 12q8-6 16 0t16 0" fill="none" stroke="#9fbcb6" stroke-width="1.5"/></pattern>
+          <g id="tree"><path d="M0 0V-60" class="twig"/><path d="M0-90C-43-81-38-30 0-34C40-30 39-86 0-90" fill="#a6bd97"/><path d="M0-37V-75m0 24-15-12m15 3 14-10" class="twig"/></g>
+          <g id="pine"><path d="M0 0V-92" class="twig"/><path d="m0-100-31 51h15l-24 35h80L16-49h15Z" fill="#6f947e"/></g>
+          <g id="tuft" fill="none" stroke="#809b70" stroke-width="2" stroke-linecap="round"><path d="m0 0-5-10m6 10 4-16m-2 17 9-7"/></g>
+          <g id="flower"><path d="M0 0v-24" class="twig"/><circle cy="-28" r="7" fill="#dbb275"/><circle cy="-28" r="2" fill="#745932"/></g>
+          <g id="pal"><ellipse cy="32" rx="20" ry="5" fill="#274b3f" opacity=".12"/><path d="M-10 21v10m20-10v10" class="ink-line"/><rect x="-20" y="-22" width="40" height="48" rx="18" fill="#668c72" stroke="#294b3f" stroke-width="2"/><path d="M-15-19Q0-39 15-19" fill="#e7bc70" stroke="#294b3f" stroke-width="2"/><path d="m-21 5-10 8m52-8 10-8" class="ink-line"/><circle cx="-7" cy="-3" r="2" fill="#fff8e9"/><circle cx="7" cy="-3" r="2" fill="#fff8e9"/><path d="M-4 7q4 4 8 0" fill="none" stroke="#fff8e9" stroke-width="2"/></g>
+          <g id="envelope"><rect x="-15" y="-10" width="30" height="20" rx="3" fill="#fff9e9" stroke="#4f705d" stroke-width="2"/><path d="m-14-8 14 10 14-10" class="twig"/></g>
+          <g id="book"><rect width="19" height="66" rx="2" fill="currentColor" stroke="#48634e" stroke-width="1.5"/><path d="M5 7v51m2-44h7m-7 33h7" stroke="#fff6df" stroke-width="2"/></g>
+          <g id="cloud"><path d="M-63 15C-101 8-75-34-44-26C-38-66 29-65 39-27C79-38 91 13 60 17Z" fill="#fffaf0" stroke="#c7cdb7" stroke-width="2"/></g>
+          <g id="trail"><path d="M720 0C537 108 458 245 668 403S903 612 720 720" fill="none" stroke="#e8dcc1" stroke-width="38"/><path class="trail-dashes" d="M720 0C537 108 458 245 668 403S903 612 720 720" fill="none" stroke="#b9a887" stroke-width="1.5" stroke-dasharray="3 12"/></g>
+        </defs>
+
+        <g class="world-stop" style="--stop:0">
+          <use href="#trail" class="trail-segment"/>
+          <g class="place">
+            <path d="M-30 237Q-7 151 94 184Q218 131 389 194Q452 230 390 294Q236 329 40 304Z" fill="#e0e6ce"/>
+            <path d="M85 293Q149 180 193 166Q229 189 246 286" fill="none" stroke="#b8d0cb" stroke-width="28"/>
+            <path d="M85 293Q149 180 193 166Q229 189 246 286" fill="none" stroke="url(#water)" stroke-width="23"/>
+            <use href="#pine" x="17" y="190"/><use href="#tree" x="396" y="215"/>
+            <use href="#tuft" x="50" y="297"/><use href="#flower" x="337" y="309"/>
+            <g class="laptop-house">
+              <path d="M4 253h126l-11 13H16Z" fill="#9dafa2" stroke="#345849" stroke-width="2"/>
+              <g id="laptop-lid"><rect x="16" y="185" width="104" height="69" rx="6" fill="#456958"/><rect x="23" y="192" width="90" height="52" rx="2" fill="#f7efd7"/><path d="m43 207-10 10 10 10m45-20 10 10-10 10m-22-24-9 28" class="twig"/></g>
+              <text x="66" y="290" text-anchor="middle">your app</text>
+              <text class="sleep-mark" x="72" y="180">z z z</text>
+            </g>
+            <g class="remote-bridge"><path d="M129 238 228 223" stroke="#9b7950" stroke-width="19"/><path d="m133 230 3 16m13-18 3 16m13-18 3 16m13-18 3 16m13-18 3 16m13-18 3 16" stroke="#f6ebd1" stroke-width="2"/><path d="m128 213 104-16m-104 7v38m104-55v42" fill="none" stroke="#6e7256" stroke-width="3"/><text x="160" y="177" class="tiny" transform="rotate(-8 160 177)">requests →</text></g>
+            <g class="runtime-house">
+              <path d="M218 165h143v105H218Z" fill="#f3e7c9" stroke="#567058" stroke-width="2"/><path d="m205 167 84-66 85 66Z" fill="#749981" stroke="#345849" stroke-width="2"/><path d="M239 145h100" stroke="#b8c5a3" stroke-width="2"/>
+              <rect x="232" y="183" width="33" height="34" rx="3" fill="#e7bd75" stroke="#567058" stroke-width="2"/><path d="M248 183v34m-16-17h33" class="twig"/>
+              <path d="M284 270v-62a23 23 0 0 1 46 0v62" fill="#ced8b7" stroke="#567058" stroke-width="2"/>
+              <text x="288" y="158" text-anchor="middle" class="house-sign">sam</text>
+              <use href="#pal" x="307" y="238"/>
+              <text x="289" y="294" text-anchor="middle" id="host-label">optional remote host</text>
+            </g>
+            <g class="model-balloon"><use href="#cloud" x="284" y="48"/><text x="284" y="44" text-anchor="middle" class="tiny">named model</text><text x="284" y="66" text-anchor="middle">“coding”</text><path d="M283 69v30" stroke="#9caa8a" stroke-dasharray="3 5"/></g>
+            <use href="#envelope" x="172" y="216" class="task-letter"/>
+          </g>
+        </g>
+
+        <g class="world-stop" style="--stop:1">
+          <use href="#trail" class="trail-segment"/>
+          <g class="place tool-place">
+            <path d="M-34 231Q-33 169 53 180Q160 142 305 172Q449 182 426 268Q380 334 174 322Q36 341-34 231Z" fill="#e1e7d1"/>
+            <use href="#tree" x="394" y="154"/><use href="#pine" x="10" y="162"/>
+            <path d="M45 117h300v23H45Zm13 23v106m274-106v106" fill="#ae8d63" stroke="#705e45" stroke-width="3"/>
+            <path d="M37 115q16-43 40-54h233q20 16 41 54Z" fill="#d9af78" stroke="#967550" stroke-width="2"/><path d="M93 62v51m62-51v51m63-51v51m60-51v51" stroke="#f1d8aa" stroke-width="23"/>
+            <text x="196" y="99" class="house-sign" text-anchor="middle">THE FIVE-TOOL WORKSHOP</text>
+            <g id="tool-read" class="tool-prop"><path d="M71 173q27-14 49 0v53q-25-10-49 0Zm49 0q24-14 49 0v53q-26-10-49 0Z" fill="#fffaed" stroke="#5d7960" stroke-width="2"/><path d="M81 188h28m-28 10h28m22-10h28m-28 10h28" class="twig"/><circle cx="143" cy="201" r="16" fill="#cee0d4" fill-opacity=".65" stroke="#44674f" stroke-width="3"/><path d="m155 213 16 17" stroke="#44674f" stroke-width="5"/></g>
+            <g id="tool-write" class="tool-prop"><path d="M99 164h70v72H99Z" fill="#fffaed" stroke="#5d7960" stroke-width="2"/><path d="M111 185h42m-42 13h30m-30 13h40" class="twig"/><path d="m148 218 35-52 9 6-35 52-11 7Z" fill="#e6bd70" stroke="#6d6747" stroke-width="2"/></g>
+            <g id="tool-edit" class="tool-prop"><rect x="72" y="168" width="128" height="67" rx="4" fill="#fffaed" stroke="#5d7960" stroke-width="2"/><path d="M88 188h94" stroke="#bd795f" stroke-width="9"/><path d="M88 214h94" stroke="#82a185" stroke-width="9"/><path d="m88 186 94 4" stroke="#754d3e" stroke-width="2"/><text x="219" y="209" class="big-symbol">✓</text></g>
+            <g id="tool-bash" class="tool-prop"><rect x="81" y="161" width="138" height="80" rx="6" fill="#355b4b"/><path d="m99 181 13 11-13 11m25 0h25" stroke="#f8eacb" stroke-width="3" fill="none"/><circle cx="197" cy="176" r="3" fill="#e9bc70"/><path d="M100 221h79" stroke="#9cbaa0" stroke-width="3"/></g>
+            <g id="tool-history" class="tool-prop"><use href="#book" x="78" y="171" style="color:#bd9172"/><use href="#book" x="101" y="171" style="color:#8ba585"/><use href="#book" x="124" y="171" style="color:#d5b16c"/><rect x="157" y="182" width="78" height="45" rx="3" fill="#fff8e8" stroke="#5d7960" stroke-width="2"/><text x="196" y="211" text-anchor="middle">#124</text></g>
+            <path d="M52 242h289v13H52Zm12 13v33m263-33v33" fill="#bb9b73" stroke="#705e45" stroke-width="2"/>
+            <use href="#pal" x="285" y="214"/>
+            <g id="output-gate"><path d="M209 311v-30h89v30" fill="none" stroke="#876747" stroke-width="3"/><path d="M199 279h110v-28H199Z" fill="#fff5df" stroke="#876747" stroke-width="2"/><text x="254" y="270" text-anchor="middle" class="tiny">256 KiB / call</text><path class="overflow-bar" d="m208 290 93 20m-93 0 93-20" stroke="#a2503d" stroke-width="5"/></g>
+            <use href="#flower" x="33" y="306"/><use href="#tuft" x="369" y="290"/>
+            <text x="90" y="318" text-anchor="middle" id="tool-art-label">read a few lines</text>
+          </g>
+        </g>
+
+        <g class="world-stop" style="--stop:2">
+          <use href="#trail" class="trail-segment"/>
+          <g class="place">
+            <path d="M-33 200Q11 137 162 151Q285 134 407 176Q457 239 406 297Q220 337 25 300Z" fill="#e2e5cc"/>
+            <path d="M13 191h371M13 275h371" stroke="#b4b898" stroke-width="26"/><path d="M13 191h371M13 275h371" stroke="#f7f3df" stroke-width="2" stroke-dasharray="6 11"/>
+            <text x="11" y="162">session A</text><text x="11" y="245">session B</text>
+            <g class="cart cart-a"><rect x="81" y="167" width="63" height="23" rx="5" fill="#789880" stroke="#385945" stroke-width="2"/><circle cx="94" cy="192" r="7" fill="#385945"/><circle cx="133" cy="192" r="7" fill="#385945"/><use href="#pal" x="113" y="143"/></g>
+            <g class="cart cart-b"><rect x="243" y="251" width="63" height="23" rx="5" fill="#d7ae6c" stroke="#735e41" stroke-width="2"/><circle cx="256" cy="276" r="7" fill="#735e41"/><circle cx="295" cy="276" r="7" fill="#735e41"/><use href="#envelope" x="275" y="244"/></g>
+            <path d="M219 195V99" stroke="#687154" stroke-width="4"/><path d="m168 94 115-12 9 39-115 11Z" fill="#fff3d3" stroke="#8a8159" stroke-width="2"/><text x="230" y="109" text-anchor="middle" class="tiny">next model request</text>
+            <g class="steering-note"><path d="m273 32 71 8-6 49-71-8Z" fill="#ecd192" stroke="#ac9357" stroke-width="2"/><path d="m280 50 43 5m-44 6 33 4" class="twig"/><path d="m285 83-31 17" stroke="#ac9357" stroke-width="2"/></g>
+            <g class="session-gate"><path d="M177 152v58" stroke="#655e43" stroke-width="4"/><path d="m177 155 79 33" stroke="#fff4dc" stroke-width="12"/><path d="m177 155 79 33" stroke="#b87961" stroke-width="12" stroke-dasharray="13 12"/></g>
+            <use href="#tree" x="381" y="143"/><use href="#flower" x="43" y="311"/><use href="#tuft" x="341" y="329"/>
+            <text x="200" y="332" text-anchor="middle" id="flow-art-label">two conversations, their own pace</text>
+          </g>
+        </g>
+
+        <g class="world-stop" style="--stop:3">
+          <use href="#trail" class="trail-segment"/>
+          <g class="place archive-place">
+            <path d="M-37 214Q-14 129 106 167Q279 138 417 204Q451 286 319 321Q122 347-18 292Z" fill="#e0e4cf"/>
+            <use href="#tree" x="9" y="161"/><use href="#pine" x="402" y="206"/>
+            <path d="M42 116h186v176H42Z" fill="#ac8c64" stroke="#6e6549" stroke-width="2"/><path d="m27 116 108-70 108 70Z" fill="#a7b898" stroke="#567058" stroke-width="2"/><text x="135" y="102" text-anchor="middle" class="house-sign">ORIGINALS</text>
+            <path d="M53 128h164v68H53Zm0 84h164v68H53Z" fill="#ebe0be"/>
+            <g class="original-books"><use href="#book" x="58" y="130" style="color:#859f81"/><use href="#book" x="81" y="130" style="color:#ca9c76"/><use href="#book" x="105" y="130" style="color:#d8bb7c"/><use href="#book" x="129" y="130" style="color:#779485"/><use href="#book" x="156" y="130" style="color:#c6a481"/><use href="#book" x="181" y="130" style="color:#a8b68e"/><use href="#book" x="58" y="214" style="color:#c6a481"/><use href="#book" x="83" y="214" style="color:#779485"/><use href="#book" x="111" y="214" style="color:#d8bb7c"/><use href="#book" x="137" y="214" style="color:#a8b68e"/><use href="#book" x="167" y="214" style="color:#ca9c76"/></g>
+            <path d="M247 244h147v13H247Zm12 13v39m120-39v39" fill="#b99b76" stroke="#776247" stroke-width="2"/>
+            <g class="long-context"><path d="m255 232 90-4m-87-9 90-4m-86-9 90-4m-86-9 90-4" stroke="#c2ad7f" stroke-width="8"/></g>
+            <g class="summary-book"><rect x="284" y="188" width="70" height="53" rx="3" fill="#fff6dc" stroke="#617b59" stroke-width="2"/><path d="M291 198h54m-54 10h41m-41 10h48m-48 10h29" stroke="#849b72" stroke-width="2"/><path d="M312 178q-45-45-87 0" fill="none" stroke="#819671" stroke-dasharray="4 5" stroke-width="2"/></g>
+            <text x="320" y="167" text-anchor="middle" class="tiny" id="summary-art-label">working context</text>
+            <g class="history-reference"><rect x="57" y="200" width="149" height="36" rx="3" fill="#fff8e8" stroke="#5e7755" stroke-width="2"/><text x="131" y="224" text-anchor="middle">found: #124</text></g>
+            <use href="#pal" x="252" y="301"/><use href="#flower" x="22" y="298"/>
+            <text x="133" y="316" text-anchor="middle">nothing thrown away</text>
+          </g>
+        </g>
+
+        <g class="world-stop" style="--stop:4">
+          <use href="#trail" class="trail-segment"/>
+          <g class="place">
+            <path d="M-30 229Q-6 134 162 158Q298 150 414 207Q454 309 311 328Q69 344-30 229Z" fill="#dce3cf"/>
+            <circle cx="348" cy="53" r="27" fill="#e9d49a"/><circle cx="360" cy="43" r="26" fill="#f7f4e9"/>
+            <use href="#pine" x="27" y="213"/><use href="#pine" x="382" y="181"/>
+            <g class="greenhouse"><path d="M82 162 192 84 302 162v123H82Z" fill="#d2e0cc" stroke="#658168" stroke-width="3"/><path class="greenhouse-light" d="M88 165 192 92 296 165v113H88Z" fill="#f4d993"/><path d="M82 162h220M137 125v158m55-195v196m55-159v158M83 223h218" fill="none" stroke="#7d9170" stroke-width="3"/>
+              <path d="M171 285v-99h43v99" fill="#e4ead7" stroke="#658168" stroke-width="3"/><circle cx="204" cy="239" r="3" fill="#658168"/>
+              <path d="M103 256h23l-5 18h-13Zm149 0h28l-5 18h-18Z" fill="#b68b6d"/><path d="M114 256v-26m152 26v-32" class="twig"/><path d="M114 245q-28-21-9-22 13 6 9 22m0-5q28-21 9-22-13 6-9 22m152 5q-28-21-9-22 13 6 9 22m0-5q28-21 9-22-13 6-9 22" fill="#82a274"/>
+            </g>
+            <path d="M258 298h77v-45h-77Z" fill="#fff4d8" stroke="#8d805c" stroke-width="2"/><path d="M267 265h58m-58 10h47m-47 10h52" stroke="#baa77a" stroke-width="2"/><text x="297" y="321" text-anchor="middle" class="tiny">logs/dev.log</text>
+            <use href="#pal" x="62" y="292"/>
+            <g class="ready-sign"><circle cx="286" cy="173" r="16" fill="#527f60"/><path d="m278 173 6 6 10-13" fill="none" stroke="#fff8e7" stroke-width="3"/></g>
+            <text x="191" y="58" text-anchor="middle" id="preview-art-label">a place for the night shift</text>
+            <use href="#tuft" x="379" y="310"/>
+          </g>
+        </g>
+
+        <g class="world-stop" style="--stop:5">
+          <use href="#trail" class="trail-segment"/>
+          <g class="place return-place">
+            <path d="M-27 192Q73 136 184 186Q261 135 417 196Q453 270 386 317Q206 337 10 303Z" fill="#dae4cd"/>
+            <path d="M-41 230Q111 180 211 219T438 222v101H-41Z" fill="#c6d9d3"/>
+            <path d="M-41 230Q111 180 211 219T438 222v101H-41Z" fill="url(#water)" opacity=".7"/>
+            <path d="M13 243h395v21H13Z" fill="#bc9a6f" stroke="#876f51" stroke-width="2"/><path d="M41 244v48m63-48v31m210-31v40m62-40v52" stroke="#8f7657" stroke-width="7"/><path d="M24 247v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14m21-14v14" stroke="#ead8b5" stroke-width="2"/>
+            <use href="#tree" x="24" y="197"/><use href="#tree" x="387" y="190"/>
+            <rect x="27" y="166" width="95" height="66" rx="5" fill="#4d705c"/><rect x="34" y="173" width="81" height="50" rx="2" fill="#fbf2d8"/><path d="M18 232h113l-10 9H29Z" fill="#91a48e" stroke="#45624d" stroke-width="2"/><text x="74" y="205" text-anchor="middle" class="tiny" id="cursor-label">cursor: 42</text>
+            <g class="replay-parcels"><g class="parcel"><use href="#envelope" x="168" y="213"/><text x="168" y="192" text-anchor="middle" class="tiny">43</text></g><g class="parcel"><use href="#envelope" x="220" y="213"/><text x="220" y="192" text-anchor="middle" class="tiny">44</text></g><g class="parcel"><use href="#envelope" x="272" y="213"/><text x="272" y="192" text-anchor="middle" class="tiny">45</text></g></g>
+            <g class="saved-stack"><ellipse cx="339" cy="160" rx="29" ry="10" fill="#b6c4a0" stroke="#607651" stroke-width="2"/><path d="M310 160v65c0 15 58 15 58 0v-65" fill="#d4ddbe" stroke="#607651" stroke-width="2"/><ellipse cx="339" cy="160" rx="29" ry="10" fill="#eaf0d9" stroke="#607651" stroke-width="2"/><path d="M310 183c0 15 58 15 58 0m-58 23c0 15 58 15 58 0" fill="none" stroke="#607651" stroke-width="2"/><text x="339" y="135" text-anchor="middle" class="tiny">saved events</text></g>
+            <use href="#pal" x="191" y="302"/>
+            <text x="199" y="89" text-anchor="middle" class="scene-handwriting">the story was here all along.</text>
+          </g>
+        </g>
+      </svg>
+
+      <section class="stop" id="departure" aria-labelledby="departure-title">
+        <div class="station-copy">
+          <p class="eyebrow"><span class="stop-number">01</span> THE DEPARTURE</p>
+          <h2 id="departure-title">Your app. <em>Its own little engine.</em></h2>
+          <p>Put the Go library inside your app: it asks a model, runs tools, and saves the conversation. No HTTP server needed.</p>
+          <p>For a remote machine, the optional thin server is a bridge: requests go in, numbered events come back. The library still does the work.</p>
+          <div class="switches" role="group" aria-label="Illustrated hosting arrangement"><button type="button" data-action="remote" aria-pressed="true">Remote bridge</button><button type="button" data-action="embedded" aria-pressed="false">Inside my Go app</button></div>
+          <div class="actions"><button class="primary" type="button" data-action="send">Send a little task <span aria-hidden="true">↗</span></button><button type="button" data-action="sleep" disabled>Let the laptop sleep</button></div>
+          <p class="response" id="departure-response" aria-live="polite">Our pretend task: “Fix the tests in my project.”</p>
+          <p class="fine-print">Simulation only. No models, commands, or network calls.</p>
+        </div>
+      </section>
+
+      <section class="stop" id="workshop" aria-labelledby="workshop-title">
+        <div class="station-copy">
+          <p class="eyebrow"><span class="stop-number">02</span> THE WORKSHOP</p>
+          <h2 id="workshop-title">Six tools.<br><em>Plenty of possibility.</em></h2>
+          <p>The model chooses a tool; the library does the job and brings back the result. Tap a bench to see a tiny example.</p>
+          <div class="tool-picker" role="group" aria-label="Tool demonstrations"><button type="button" data-tool="read" aria-pressed="true">read</button><button type="button" data-tool="write" aria-pressed="false">write</button><button type="button" data-tool="edit" aria-pressed="false">edit</button><button type="button" data-tool="bash" aria-pressed="false">bash</button><button type="button" data-tool="history" aria-pressed="false">history</button><button type="button" data-tool="subagents" aria-pressed="false">subagents</button></div>
+          <div class="tool-example" aria-live="polite"><code id="tool-request">read main.go · lines 1–20</code><p id="tool-result">A small window into a UTF-8 text file. Read only the lines you need.</p></div>
+          <button class="text-button" type="button" data-action="overflow">What if the result is enormous? <span aria-hidden="true">↗</span></button>
+          <p class="response" id="overflow-response" aria-live="polite">Normal tool results have a default 256 KiB limit per call.</p>
+          <p class="fine-print">Real tools have the host user's access. This is not a sandbox. There are no built-in approval prompts; an embedding host can supply a BeforeTool approval hook.</p>
+        </div>
+      </section>
+
+      <section class="stop" id="crossroads" aria-labelledby="crossroads-title">
+        <div class="station-copy">
+          <p class="eyebrow"><span class="stop-number">03</span> THE CROSSROADS</p>
+          <h2 id="crossroads-title">A nudge, <em>not a derailment.</em></h2>
+          <p>Each session is its own conversation, with one turn at a time. Other sessions can work alongside it.</p>
+          <p>Steering saves your guidance now, then applies it before the <strong>next model request</strong>—not halfway through a tool.</p>
+          <div class="actions"><button type="button" data-action="steer">“Also update the notes”</button><button type="button" data-action="boundary" disabled>Reach the next request</button></div>
+          <div class="actions"><button type="button" data-action="interrupt">Interrupt session A</button><button type="button" data-action="continue" disabled>Continue A</button></div>
+          <p class="response" id="flow-response" aria-live="polite">Both tracks are open. Try guiding or stopping just A.</p>
+          <p class="fine-print">Normal completion can start a follow-up for waiting guidance. Interrupt/failure pauses it instead. Interrupt cannot undo effects already made.</p>
+        </div>
+      </section>
+
+      <section class="stop" id="archive" aria-labelledby="archive-title">
+        <div class="station-copy">
+          <p class="eyebrow"><span class="stop-number">04</span> THE MEMORY HOUSE</p>
+          <h2 id="archive-title">Pack light.<br><em>Keep the originals.</em></h2>
+          <p>A long conversation becomes a working summary plus recent context. The original pages stay on the shelf. This is <strong>compaction</strong>, not deletion.</p>
+          <div class="model-choices"><span>Main: <strong>coding</strong> <span class="lock-label">explicit handoff to change</span></span><label for="summary-model">Summary model <select id="summary-model"><option value="summary">summary</option><option value="coding">coding</option></select></label></div>
+          <div class="actions"><button type="button" data-action="compact">Make a working summary</button><button type="button" data-action="history">Find an old detail</button></div>
+          <p class="response" id="archive-response" aria-live="polite">This pretend session is idle, so manual compaction is available.</p>
+          <p class="fine-print">History pattern-search (Go regex) finds up to 10 references per page. Then read the original context. Only this session is searched.</p>
+        </div>
+      </section>
+
+      <section class="stop" id="nightshift" aria-labelledby="nightshift-title">
+        <div class="station-copy">
+          <p class="eyebrow"><span class="stop-number">05</span> THE NIGHT SHIFT</p>
+          <h2 id="nightshift-title">Some things <em>stay switched on.</em></h2>
+          <p>A preview server can keep running after a turn—or an interrupt. Launch it with background Bash and an explicit log file, not a trailing <code>&amp;</code>.</p>
+          <div class="actions"><button type="button" data-action="preview">Launch a pretend preview</button><button type="button" data-action="ready" disabled>Check readiness</button></div>
+          <div class="actions"><button type="button" data-action="preview-interrupt" disabled>Interrupt its session</button><button type="button" data-action="delete" disabled>Delete idle session</button></div>
+          <p class="response" id="preview-response" aria-live="polite">The greenhouse is quiet. A launch is not a readiness check.</p>
+          <p class="fine-print">Command exit, session deletion, or runtime shutdown stops owned background work. Logs stay in files, uncapped. A remote preview needs your own port forwarding.</p>
+        </div>
+      </section>
+
+      <section class="stop" id="return" aria-labelledby="return-title">
+        <div class="station-copy">
+          <p class="eyebrow"><span class="stop-number">06</span> THE RETURN DOCK</p>
+          <h2 id="return-title">Pick up <em>where you left off.</em></h2>
+          <p>Closing your laptop only closes your view. While the remote service keeps running, it saves events before publishing them.</p>
+          <p>Return with your last event number. Replay the missed events, then follow new ones. Your client ignores duplicates by session and number.</p>
+          <div class="actions"><button class="primary" type="button" data-action="replay">Try a sleep &amp; replay <span aria-hidden="true">↶</span></button><button type="button" data-action="reset">Reset the little world</button></div>
+          <p class="response" id="replay-response" aria-live="polite">An example cursor of 42 means: “Show me events after 42.”</p>
+          <p class="fine-print">A service restart is different: unfinished work is suspended until the host resumes it. The stock server can opt in with resume_on_start. Replay-allowed tools/hooks may repeat effects; unsafe carried-over calls are skipped and reported to the agent. Saved outcomes do not rerun. Stop the suspended operation before Continue if you want a new turn instead. Old processes/PIDs are never adopted.</p>
+        </div>
+      </section>
+    </div>
+
+    <section class="field-notes" aria-labelledby="notes-title">
+      <p class="eyebrow">A FEW NOTES FOR THE WALK HOME</p>
+      <h2 id="notes-title">Know what the signals mean.</h2>
+      <div class="signals">
+        <p><span class="signal output">Output</span><q>Here are the test results.</q>Ordinary answers and tool output. Seeing text does not prove the turn finished successfully.</p>
+        <p><span class="signal diagnostic">Diagnostic / warning</span><q>Waiting before a model retry.</q>A notice about the work, such as compaction, interruption, or recovery.</p>
+        <p><span class="signal error">Error</span><q>That tool result is too large.</q>A problem to act on. A recoverable tool error need not end the turn.</p>
+      </div>
+      <div class="last-notes">
+        <p><strong>Not a window into hidden thoughts.</strong> “Thinking” is only reasoning text or summaries the provider exposes. sam-g does not invent hidden chain-of-thought.</p>
+        <p><strong>Instructions travel in snapshots.</strong> Prompt-file contents stay frozen until setup or unified reload; turns and compaction do not reread them. Whole-runtime config and prompt changes require every session to be fully idle (SIGHUP in the stock server). Model-only installation can happen while chats run: active work keeps captured definitions, and new work uses the latest catalog; restart/recovery also uses latest configuration. The main model stays bound until an explicit idle model handoff; catalog changes never silently move an existing chat.</p>
+        <p><strong>A trusted-machine workshop.</strong> No sandbox or built-in approval UI. A Go host can add approval hooks. The server is a thin remote host, not a public multi-user service. Use your existing SSH/Tailscale boundary. sam-g itself needs no Node runtime; shell tools need Bash.</p>
+      </div>
+      <a class="trail-link" href="README.md">Make this world part of your app <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+  <footer><a class="wordmark" href="README.md">sam-g</a><p>Small core. Saved stories. Your own machine.</p><p>Illustrated, not live. Entirely local. <a href="#">Back to the top ↑</a></p></footer>
+</body>
+</html>

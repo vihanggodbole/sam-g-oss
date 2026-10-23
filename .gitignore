@@ -1,0 +1,17 @@
+# Local agent/runtime data; normal host data belongs outside the checkout.
+.pi/
+/.sam-g/
+/example/.data/
+
+# Local secrets and runtime artifacts, not source fixtures.
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.log
+.DS_Store

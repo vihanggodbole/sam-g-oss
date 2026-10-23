@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{.}}">
+  <title>sam-g · Local agent workspace</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/accounts.js" defer></script>
+  <script src="/live.js" defer></script>
+  <script src="/settings.js" defer></script>
+  <script src="/inspector.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<main>
+  <header>
+    <span class="tag">LOCAL EXAMPLE / SAM-G</span>
+    <h1>A small agent workspace.</h1>
+    <p>ChatGPT or Copilot. Named accounts. Multiple sessions. Optional tools.</p>
+  </header>
+  <aside id="connection-message" class="section-message" role="alert" hidden></aside>
+
+  <section aria-labelledby="account-heading">
+    <h2 id="account-heading">1 / Accounts</h2>
+    <div class="toolbar">
+      <label for="account">Account for models / new sessions</label>
+      <select id="account" disabled><option value="">Add an account below</option></select>
+      <button id="logout" disabled>Sign out selected</button>
+      <button id="retry-usage" hidden>I reviewed Usage — allow another try</button>
+    </div>
+    <p id="account-status" role="status">Connecting to the local server…</p>
+    <p class="hint">Account actions do not wait for every session to be idle. Re-signing in or signing out can cause running work using that account to fail; other accounts keep working. Allowing another usage try clears only that account’s local block and does not itself send a message.</p>
+    <aside id="account-message" class="section-message" role="alert" hidden></aside>
+    <form id="login-form" class="toolbar">
+      <label for="login-provider">Sign in / add account</label>
+      <select id="login-provider"><option value="openai-chatgpt">ChatGPT</option><option value="github-copilot">GitHub Copilot</option></select>
+      <input id="account-name" value="personal" placeholder="e.g. work-copilot" pattern="[A-Za-z0-9._-]+" maxlength="128" required aria-label="Saved account name">
+      <button id="login" type="submit" disabled>Sign in with ChatGPT</button>
+    </form>
+    <aside id="login-message" class="section-message" role="alert" hidden></aside>
+    <p id="copilot-note" class="hint">Copilot device sign-in is built in; no client-ID setup is needed.</p>
+    <div id="logins" aria-live="polite"></div>
+    <p class="hint">Use a different label for each account. ChatGPT sign-in requests plan-use consent. Copilot uses a GitHub device code; client/subscription access is required. Sending uses the selected account's allowance. No automatic account or billing fallback.</p>
+    <p class="hint"><a href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer noopener">ChatGPT Usage settings ↗</a></p>
+  </section>
+
+  <div class="workspace-layout">
+    <section class="sessions-panel" aria-labelledby="sessions-heading">
+      <h2 id="sessions-heading">2 / Sessions</h2>
+      <aside id="sessions-message" class="section-message" role="alert" hidden></aside>
+      <nav id="sessions" aria-label="Saved sessions"><p class="hint">No sessions yet.</p></nav>
+      <div id="recovery" hidden>
+        <p id="resume-warning" class="warning"></p>
+        <label class="check"><input id="resume-ack" type="checkbox"> I accept possible repeated tool/hook effects.</label>
+        <button id="resume" disabled>Resume ALL suspended work</button>
+        <aside id="recovery-message" class="section-message" role="alert" hidden></aside>
+      </div>
+      <details open class="new-session">
+        <summary>New session</summary>
+        <form id="new-session">
+          <label for="name">Name</label>
+          <input id="name" maxlength="120" placeholder="e.g. Website fixes">
+          <label for="model">Model</label>
+          <select id="model" disabled><option value="">Load models after signing in</option></select>
+          <button id="models" type="button" disabled>Load models</button>
+          <button id="register-model" type="button" disabled>Register model only</button>
+      <p id="model-metadata" class="hint" hidden></p>
+          <label for="workspace">Workspace folder</label>
+          <input id="workspace" placeholder="/absolute/path/to/project" required>
+          <label class="check"><input id="new-tools" type="checkbox"> Enable tools for this session</label>
+          <p class="warning">Tools run automatically as your OS user: read/write/edit files, bash commands, history, and child-agent tasks. The workspace is a working directory, <strong>not a sandbox</strong>. They can access files outside it, including private data.</p>
+          <button id="new" type="submit" disabled>Create session</button>
+          <aside id="catalog-message" class="section-message" role="alert" hidden></aside>
+        </form>
+        <p class="hint">Sessions can run independently. Adding a new model applies to new work; running sessions keep their captured definitions. Changing this session’s tools or settings requires only this session to be idle.</p>
+      </details>
+    </section>
+
+    <section class="chat-panel" aria-labelledby="chat-heading">
+      <h2 id="chat-heading">3 / Conversation</h2>
+      <p id="session-info" class="hint">Create or select a session.</p>
+      <div class="toolbar session-account-settings">
+        <label for="session-account">This session's account</label>
+        <select id="session-account" disabled><option value="">Select a session</option></select>
+        <button id="apply-account" disabled>Switch account</button>
+      </div>
+      <p class="hint">Switch within the same provider only, while this session is idle. Use a new session to change provider or model. After editing this alias’s API, Rebind model/account explicitly converts earlier context to portable text; no protocol change happens silently. Switching the account above does not redirect this conversation. Apply, Switch account and Save settings save the same unsaved session-settings draft.</p>
+      <div class="toolbar tool-settings">
+        <label class="check"><input id="session-tools" type="checkbox" disabled> Tools enabled</label>
+        <button id="apply-tools" disabled>Apply</button>
+      </div>
+      <p id="tools-note" class="hint">Tools are off by default. Enabling them allows automatic actions without a per-command approval dialog.</p>
+      <aside id="toolbar-settings-message" class="section-message" role="alert" hidden></aside>
+      <div id="usage" class="hint" role="status"></div>
+      <div class="toolbar session-actions">
+        <button id="rename" disabled>Rename</button><button id="delete-session" disabled>Delete session</button>
+        <button id="export-history" disabled>Export history</button>
+      </div>
+      <aside id="maintenance-message" class="section-message" role="alert" hidden></aside>
+      <div id="messages" role="log" aria-label="Conversation" aria-live="polite">
+        <p id="empty">Your conversation will appear here.</p>
+      </div>
+      <details open id="live-panel"><summary>Live activity <span id="stream-status">not connected</span></summary>
+        <p class="hint">Streamed text is provisional, not proof of success. Steps and attempts stay separate; saved history replaces finished previews.</p>
+        <div id="live" aria-live="polite"></div>
+      </details>
+      <div id="turn-failures" aria-label="Saved session failures"></div>
+      <aside id="chat-message" class="section-message" role="alert" hidden></aside>
+      <p id="phase" role="status">No session selected.</p>
+      <form id="composer">
+        <label for="prompt">Message</label>
+        <textarea id="prompt" rows="3" maxlength="8000" placeholder="Try: Reply with a short hello." disabled></textarea>
+        <div class="buttons">
+          <button id="send" type="submit" disabled>Send</button>
+          <button id="stop" type="button" disabled>Stop this session</button>
+          <button id="continue" type="button" disabled>Continue / follow-up</button>
+          <button id="compact" type="button" disabled>Compact now</button>
+        </div>
+      </form>
+      <p class="hint">Continue starts a new turn using optional text above and pending guidance; Resume restarts original suspended work. Compact makes a summary request using the configured account. Stopping never undoes effects that already happened.</p>
+      <details open><summary>Steering / queued guidance</summary>
+        <form id="steering-form"><label for="steering-text">Change direction without stopping the agent</label>
+          <textarea id="steering-text" rows="2" maxlength="8000" placeholder="e.g. Focus on the UI; skip the tests for now."></textarea>
+          <div class="buttons"><button id="steer" disabled>Send guidance</button><button id="clear-steering" type="button" disabled>Clear pending guidance</button></div>
+        </form>
+        <p class="hint">During work, guidance applies before the next request. On idle, unpaused sessions it can start work immediately. On paused sessions it waits for Continue.</p>
+        <ul id="steering-list"></ul>
+      </details>
+      <details id="settings-panel"><summary>Session settings / compaction</summary>
+        <p class="hint">Save sets explicit overrides for the fields below, keeping other overrides. Only this session must be idle. Prompt files are read only during setup/reload, not every turn.</p>
+        <aside id="settings-message" class="section-message" role="alert" hidden></aside>
+        <form id="settings-form">
+          <fieldset id="settings-fields" disabled>
+            <label for="instructions">Additional instructions</label><textarea id="instructions" rows="3"></textarea>
+            <label for="instructions-file">Instructions file (optional, appended after text)</label><input id="instructions-file">
+            <div id="individual-tools" class="tool-checks"></div>
+            <div class="setting-grid">
+              <label>Tool concurrency (0 = default)<input id="tool-concurrency" type="number" min="0"></label>
+              <label>Output limit, bytes (0 = default)<input id="tool-output-limit" type="number" min="0"></label>
+              <label>Reasoning effort<select id="reasoning-effort"></select></label>
+              <label class="check"><input id="reasoning-summary" type="checkbox"> Request reasoning summaries</label>
+            </div>
+            <label class="check"><input id="auto-compact" type="checkbox"> Automatic compaction (makes summary requests)</label>
+            <label for="compaction-model">Compaction model</label><select id="compaction-model"></select>
+            <label for="compaction-account">Compaction account (blank inherits when same provider)</label><select id="compaction-account"></select>
+            <div class="setting-grid">
+              <label>Output reserve (0 = default)<input id="output-reserve" type="number" min="0"></label>
+              <label>Trigger percent (0 = default)<input id="trigger-percent" type="number" min="0" max="100"></label>
+              <label>Recent percent (0 = default)<input id="recent-percent" type="number" min="0" max="100"></label>
+            </div>
+            <label for="compaction-prompt">Additional summary instructions</label><textarea id="compaction-prompt" rows="2"></textarea>
+            <label for="compaction-file">Summary instructions file (alternative to text)</label><input id="compaction-file">
+          </fieldset>
+          <div class="buttons"><button id="save-settings" disabled>Save session settings</button><button id="inherit-settings" type="button" disabled>Inherit defaults (keep model/account)</button></div>
+        </form>
+        <details><summary>Exact effective settings and overrides</summary><pre id="settings-json"></pre></details>
+      </details>
+      <details id="model-panel"><summary>Model configuration (shared)</summary>
+        <p class="warning">These are your declared local budgets and supported options—not discovered guarantees. Verify provider support before enabling reasoning options. Changes apply to new work without waiting for idle sessions. A chat’s next turn may need its settings repaired. Saved in models.json before future startup.</p>
+        <aside id="model-message" class="section-message" role="alert" hidden></aside>
+        <form id="model-form">
+          <label for="configured-model">Configured model</label><select id="configured-model"></select>
+          <label for="model-api">Native API</label><select id="model-api"><option value="responses">Responses (legacy default)</option><option value="anthropic_messages">Messages (Copilot Opus 5.5 only)</option></select>
+          <label for="max-output-tokens">Verified maximum output tokens (0 = unknown)</label><input id="max-output-tokens" type="number" min="0">
+          <p class="hint">Messages requires a verified output bound. Its output reserve is a hard response cap, including thinking; it is not clamped. Summary display does not turn adaptive thinking off.</p>
+          <label for="context-budget">Local context budget, tokens</label><input id="context-budget" type="number" min="1" required>
+          <label for="supported-efforts">Supported reasoning efforts, comma-separated (blank = none declared)</label><input id="supported-efforts" placeholder="low, medium, high">
+          <label class="check"><input id="supports-summaries" type="checkbox"> Model supports reasoning summaries</label>
+          <button id="save-model" disabled>Save model definition</button>
+        </form>
+      </details>
+      <details id="inspector-panel"><summary>Context / diagnostics / execution records</summary>
+        <div class="toolbar"><select id="inspect-kind" aria-label="Inspect"><option value="context">Context and installed summary</option><option value="events">Durable events</option><option value="turns">Turn records</option><option value="diagnostics">Runtime diagnostics</option></select>
+          <button id="inspect-refresh" type="button">Refresh</button><button id="inspect-next" type="button" disabled>Next page</button></div>
+        <aside id="inspection-message" class="section-message" role="alert" hidden></aside>
+        <p id="inspect-caption" class="hint"></p><pre id="inspection"></pre>
+      </details>
+    </section>
+  </div>
+
+  <footer>
+    One local user / multiple saved sessions. Each tab can view a different session.
+    Sessions sharing a folder can change the same files. Keep this server on your own computer.
+  </footer>
+</main>
+</body>
+</html>

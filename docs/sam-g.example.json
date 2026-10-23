@@ -1,0 +1,41 @@
+{
+  "server": {
+    "listen": "127.0.0.1:8080",
+    "resume_on_start": false,
+    "max_body_bytes": 0,
+    "sse_write_timeout_seconds": 0
+  },
+  "database_path": "~/.sam-g/sessions.db",
+  "max_provider_event_bytes": 0,
+  "providers": {
+    "openai": {
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY"
+    }
+  },
+  "models": {
+    "coding": {
+      "provider": "openai",
+      "model_id": "gpt-4.1",
+      "context_tokens": 128000
+    },
+    "reasoning": {
+      "provider": "openai",
+      "model_id": "o4-mini",
+      "context_tokens": 128000,
+      "reasoning_efforts": ["low", "medium", "high"],
+      "reasoning_summaries": true
+    },
+    "summary": {
+      "provider": "openai",
+      "model_id": "gpt-4.1-mini",
+      "context_tokens": 128000
+    }
+  },
+  "defaults": {
+    "model": "coding",
+    "compaction": {
+      "model": "summary"
+    }
+  }
+}
