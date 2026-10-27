@@ -117,6 +117,9 @@ type Model struct {
 	// CatalogAccount marks an account-scoped managed entry. Nil means manual;
 	// a pointer to empty string identifies an API-key catalog.
 	CatalogAccount *string `json:"catalog_account,omitempty"`
+	// NoImages records that the provider reports this model cannot read
+	// images; prompts with images are then refused instead of failing later.
+	NoImages bool `json:"no_images,omitempty"`
 	// Unavailable preserves a discovered entry that cannot execute here.
 	Unavailable string `json:"unavailable,omitempty"`
 	DisplayName string `json:"display_name,omitempty"`

@@ -291,13 +291,14 @@ func (s *Server) startSubagent(r *http.Request) (int, any, error) {
 
 func (s *Server) startTurn(r *http.Request) (int, any, error) {
 	var body struct {
-		Prompt string `json:"prompt"`
+		Prompt string      `json:"prompt"`
+		Images []sam.Image `json:"images"`
 	}
 	if err := s.decode(r, &body, false); err != nil {
 		return 0, nil, err
 	}
 	out, err := s.rt.StartTurn(r.Context(), sam.StartTurnRequest{
-		RequestID: requestID(r), SessionID: r.PathValue("id"), Prompt: body.Prompt,
+		RequestID: requestID(r), SessionID: r.PathValue("id"), Prompt: body.Prompt, Images: body.Images,
 	})
 	return http.StatusAccepted, out, err
 }

@@ -68,6 +68,7 @@ func copilotCapabilities(raw json.RawMessage, m *DiscoveredModel) error {
 			Supports struct {
 				Thinking *bool    `json:"thinking"`
 				Efforts  []string `json:"reasoning_effort"`
+				Vision   *bool    `json:"vision"`
 			} `json:"supports"`
 		} `json:"capabilities"`
 	}
@@ -78,6 +79,7 @@ func copilotCapabilities(raw json.RawMessage, m *DiscoveredModel) error {
 	m.MaxOutputTokens = v.Capabilities.Limits.Output
 	m.SupportsReasoning = v.Capabilities.Supports.Thinking
 	m.ReasoningEfforts = v.Capabilities.Supports.Efforts
+	m.SupportsImages = v.Capabilities.Supports.Vision
 	if v.Endpoints != nil {
 		m.SupportsResponses = new(slices.Contains(v.Endpoints, "/responses"))
 		m.SupportsMessages = new(slices.Contains(v.Endpoints, "/v1/messages"))

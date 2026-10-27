@@ -103,7 +103,7 @@ func (r *Runtime) StartSubagent(ctx context.Context, req StartSubagentRequest) (
 			return err
 		}
 		ack.SessionID = s.id
-		ack.TurnID, err = r.startTurn(tx, s, req.Prompt, "prompt")
+		ack.TurnID, err = r.startTurn(tx, s, userInput{text: req.Prompt}, "prompt")
 		if err != nil {
 			return err
 		}

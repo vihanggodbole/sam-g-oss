@@ -14,6 +14,10 @@ type StartTurnRequest struct {
 	RequestID string `json:"request_id"`
 	SessionID string `json:"session_id"`
 	Prompt    string `json:"prompt"`
+	// Images go with the prompt (at most 4, 3.75 MiB together). The session's
+	// model must not report that it cannot read images. Prompt may be empty
+	// when images are sent.
+	Images []Image `json:"images,omitempty"`
 }
 
 // ContinueRequest explicitly resumes a paused or stopped session with its
@@ -79,10 +83,13 @@ type CompactAck struct {
 // stable across retries. Once accepted, the turn is owned by the Runtime and
 // continues independently of ctx; observe completion through events.
 func (r *Runtime) StartTurn(ctx context.Context, req StartTurnRequest) (TurnAck, error) {
-	if req.Prompt == "" {
+	if req.Prompt == "" && len(req.Images) == 0 {
 		return TurnAck{}, errorf(CodeInvalidArgument, "prompt is required")
 	}
-	return r.begin(req.RequestID, "start_turn", req, req.SessionID, req.Prompt, "prompt")
+	if err := validateImages(req.Images); err != nil {
+		return TurnAck{}, err
+	}
+	return r.begin(req.RequestID, "start_turn", req, req.SessionID, userInput{req.Prompt, req.Images}, "prompt")
 }
 
 // Continue starts a new turn after interruption or failure, applying paused
@@ -90,14 +97,14 @@ func (r *Runtime) StartTurn(ctx context.Context, req StartTurnRequest) (TurnAck,
 // be admitted with Resume or terminally stopped with Interrupt. It returns
 // after acceptance; the Runtime owns the resulting work independently of ctx.
 func (r *Runtime) Continue(ctx context.Context, req ContinueRequest) (TurnAck, error) {
-	return r.begin(req.RequestID, "continue", req, req.SessionID, req.Prompt, "continue")
+	return r.begin(req.RequestID, "continue", req, req.SessionID, userInput{text: req.Prompt}, "continue")
 }
 
 // begin accepts a prompt or continuation. Session state is checked only
 // after request deduplication, so an accepted request retried after its
 // session was deleted still returns the saved acknowledgement. Neither
 // admission nor the worker rereads prompt files; setup/reload prepared them.
-func (r *Runtime) begin(requestID, op string, args any, sessionID, promptText, source string) (TurnAck, error) {
+func (r *Runtime) begin(requestID, op string, args any, sessionID string, in userInput, source string) (TurnAck, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	ack := TurnAck{SessionID: sessionID}
@@ -109,7 +116,7 @@ func (r *Runtime) begin(requestID, op string, args any, sessionID, promptText, s
 		if s.phase != PhaseIdle || r.workers[s.id] != nil {
 			return errorf(CodeConflict, "Session has unfinished work (%s). Resume it (Go Resume or server resume_on_start on restart), or Interrupt and wait before starting another turn.", s.phase)
 		}
-		if promptText == "" {
+		if in.empty() {
 			var n int
 			if err := tx.QueryRowContext(bg, `SELECT (SELECT COUNT(*) FROM history WHERE session_id = ?1) +
 				(SELECT COUNT(*) FROM steering WHERE session_id = ?1 AND status = 'pending')`, s.id).Scan(&n); err != nil {
@@ -119,7 +126,7 @@ func (r *Runtime) begin(requestID, op string, args any, sessionID, promptText, s
 				return errorf(CodeInvalidArgument, "nothing to continue: the session has no history or pending guidance")
 			}
 		}
-		ack.TurnID, err = r.startTurn(tx, s, promptText, source)
+		ack.TurnID, err = r.startTurn(tx, s, in, source)
 		return err
 	})
 	if fresh {
@@ -185,7 +192,7 @@ func (r *Runtime) acceptSteering(tx *sql.Tx, req SteerRequest, notification bool
 		return ack, err
 	}
 	if modelErr == nil && s.phase == PhaseIdle && r.workers[s.id] == nil && !s.paused {
-		ack.TurnID, err = r.startTurn(tx, s, "", "steering")
+		ack.TurnID, err = r.startTurn(tx, s, userInput{}, "steering")
 	}
 	return ack, err
 }

@@ -114,6 +114,9 @@ func (r *Runtime) prepareMain(ctx context.Context, x *execution, w *worker) erro
 	}
 	notes := append(append([]hookNote(nil), t.pendingTurn.notes...), h.notes...)
 	input := noteInput(view.input(), notes)
+	if t.model.NoImages {
+		input = withoutImages(input)
+	}
 	if len(notes) > 0 {
 		need, limit := estimateRequest(t.instructions, input, t.toolList), budgets(t.model, t.cfg).input
 		if need > limit {

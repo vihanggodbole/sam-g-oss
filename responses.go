@@ -607,9 +607,10 @@ type outputItem struct {
 	Arguments string `json:"arguments"`
 	Output    string `json:"output"`
 	Content   []struct {
-		Type    string `json:"type"`
-		Text    string `json:"text"`
-		Refusal string `json:"refusal"`
+		Type     string `json:"type"`
+		Text     string `json:"text"`
+		Refusal  string `json:"refusal"`
+		ImageURL string `json:"image_url"`
 	} `json:"content"`
 	Summary []struct {
 		Text string `json:"text"`

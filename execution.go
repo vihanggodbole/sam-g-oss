@@ -365,7 +365,7 @@ func (r *Runtime) handoffGuidance(tx *sql.Tx, sid, source string) error {
 		if _, err := r.selectWorkModels(s); err != nil {
 			return pauseIdle(tx, s, true, "Next turn needs settings repair: "+err.Error())
 		}
-		_, err = r.startTurn(tx, s, "", source)
+		_, err = r.startTurn(tx, s, userInput{}, source)
 	}
 	return err
 }

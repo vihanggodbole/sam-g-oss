@@ -57,6 +57,7 @@ Recognize the direct model API fields consumed by VS Code Copilot Chat:
 - `capabilities.limits.max_output_tokens` → `max_output_tokens` (maximum output, not a prompt limit).
 - `capabilities.supports.reasoning_effort` → `reasoning_efforts`.
 - `capabilities.supports.thinking` → `supports_reasoning`.
+- `capabilities.supports.vision` → `supports_images`; false marks the installed model `no_images`.
 - `supported_endpoints` containing `/responses` → `supports_responses: true`;
   an explicitly supplied list without it → false. Missing/null remains unknown.
 - `supported_endpoints` containing `/v1/messages` → `supports_messages: true`;

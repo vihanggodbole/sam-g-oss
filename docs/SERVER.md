@@ -196,7 +196,7 @@ Every route is under `/v1`, except the health checks. Request and response bodie
 | `DELETE /v1/sessions/{id}` | Delete an idle session; `children_busy` if owned children have unfinished work. Their histories are preserved after allowed deletion. | 204 |
 | `POST /v1/sessions/{id}/subagents` `{name?, prompt, workspace?, config?}` | Atomically create/start a child, return ordinary `TurnAck`; requires Idempotency-Key. [Selections/recovery](SUBAGENTS.md). | 202 |
 | `GET /v1/sessions/{id}/subagents` | `{"subagents":[...]}`: direct children with session, latest turn, account and history/event references | 200 |
-| `POST /v1/sessions/{id}/turns` `{prompt}` | Start a turn (idle sessions only) | 202 |
+| `POST /v1/sessions/{id}/turns` `{prompt, images?}` | Start a turn (idle sessions only). `images` is `[{media_type, data}]` with base64 data (at most 4, 3.75 MiB together); see LIBRARY.md "Images". | 202 |
 | `GET /v1/sessions/{id}/turns?after=&before=&limit=&summary=` | Forward pages return `{"turns":[...],"next":"..."}`. `before=0` selects the newest page; earlier pages return `older`. `summary=true` omits frozen instructions but keeps status/reason/error, times and usage. Default `summary=false` preserves full turn records. Limit defaults to and is capped at 200. | 200 |
 | `POST /v1/sessions/{id}/steering` `{text}` | Add guidance | 202 |
 | `GET /v1/sessions/{id}/steering` | Pending guidance: `{"steering": [...]}` | 200 |

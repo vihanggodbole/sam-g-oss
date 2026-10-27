@@ -17,14 +17,25 @@ func prompt(name string) string {
 	return string(b)
 }
 
+// userInput is what a person sends to start a turn: text, images or both.
+type userInput struct {
+	text   string
+	images []Image
+}
+
+func (in userInput) empty() bool { return in.text == "" && len(in.images) == 0 }
+
 // startTurn accepts genuine input, the operation and its next action together.
 // Callers reserve a worker before releasing the transition lock.
-func (r *Runtime) startTurn(tx *sql.Tx, s *sessionRow, promptText, source string) (string, error) {
+func (r *Runtime) startTurn(tx *sql.Tx, s *sessionRow, in userInput, source string) (string, error) {
 	models, err := r.selectWorkModels(s)
 	if err != nil {
 		return "", err
 	}
 	m := models.main
+	if len(in.images) > 0 && m.NoImages {
+		return "", errorf(CodeInvalidArgument, "model %q cannot read images; send text, or choose a model that can see images", m.Alias)
+	}
 	if err := bindModel(tx, s, m); err != nil {
 		return "", err
 	}
@@ -41,15 +52,15 @@ func (r *Runtime) startTurn(tx *sql.Tx, s *sessionRow, promptText, source string
 	if s.cfg.ReasoningSummary {
 		reasoning = "summaries"
 	}
-	p := TurnStartedPayload{Source: source, Prompt: promptText, Model: m.Alias, Account: s.cfg.Account, Reasoning: reasoning}
+	p := TurnStartedPayload{Source: source, Prompt: in.text, Images: len(in.images), Model: m.Alias, Account: s.cfg.Account, Reasoning: reasoning}
 	if err := appendEvent(tx, event(s.id, EventTurnStarted, p).turn(id)); err != nil {
 		return "", err
 	}
 	if err := applyPending(tx, s.id, id); err != nil {
 		return "", err
 	}
-	if promptText != "" {
-		if _, err := appendHistory(tx, s.id, id, kindUser, "", userMessage(promptText)); err != nil {
+	if !in.empty() {
+		if _, err := appendHistory(tx, s.id, id, kindUser, "", userMessage(in.text, in.images...)); err != nil {
 			return "", err
 		}
 	}

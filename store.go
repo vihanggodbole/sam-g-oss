@@ -254,11 +254,15 @@ func touchActivity(q querier, sessionID string) error {
 	return err
 }
 
-func userMessage(text string) map[string]any {
-	return map[string]any{
-		"type": "message", "role": "user",
-		"content": []map[string]any{{"type": "input_text", "text": text}},
+func userMessage(text string, images ...Image) map[string]any {
+	content := []map[string]any{}
+	if text != "" || len(images) == 0 {
+		content = append(content, map[string]any{"type": "input_text", "text": text})
 	}
+	for _, img := range images {
+		content = append(content, map[string]any{"type": "input_image", "image_url": img.dataURL()})
+	}
+	return map[string]any{"type": "message", "role": "user", "content": content}
 }
 
 // dedupe implements request-ID idempotency inside tx. It returns the saved

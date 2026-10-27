@@ -193,7 +193,8 @@ is versioned separately from live acceptance.
 - **Roles and inputs:** ordered leading application instructions and skill catalog
   become system text blocks. Historical developer instructions become native
   system messages in their original position, not user data; BeforeRequest data
-  retains its user-shaped application provenance. Text/local tools only: images,
+  retains its user-shaped application provenance. Text, user images (as base64
+  image blocks) and local tools only: other images,
   citations, server tools, unknown blocks and unsupported roles fail before sending
   or accepting the response. Instructions/messages interrupting the required
   tool-use/result adjacency fail before sending rather than being moved or dropped.
@@ -412,6 +413,9 @@ models, err = rt.DiscoverModels(ctx, "chatgpt", "work") // thin alias adapter
 One explicit GET after normal credential resolution, no Runtime required standalone, no catalog cache/persistence/retries/inference/enablement/config mutation. Subscription account is required; API-key discovery rejects Account. Results preserve order and exact IDs. Provider capabilities remain nullable; a separate optional `ModelReference` supplies versioned, advisory Pi metadata without changing provider facts, model availability or execution settings. See [field mappings and reference sources](MODEL-METADATA.md). Copilot direct-route entitlement remains unverified. Fixed 32 MiB catalog-envelope bound is separate from SSE limits. See [normalization and evidence limits](AUTH-MODELS.md#discover-upstream-models-without-installing-them).
 
 `Models()` remains installed configured aliases. Discovery does not install or switch them.
+
+To install a discovered model, a host converts it with `ConfiguredModel(provider, account, discovered, contextTokens)`, the same rules the stock server's catalog installer uses: `contextTokens` 0 takes the reported window (or `FallbackContextTokens`), a positive budget is capped by it, and a model this runtime cannot use keeps its reason in `Unavailable` rather than being dropped.
+
 `UpdateModels(ctx, map[string]Model)` replaces only definitions for new work; no
 session must be idle and no prompt/skill files are reread. Running turns and manual
 compactions retain their admitted main and summary definitions, budgets and
@@ -430,6 +434,12 @@ Full `ReloadAndSave(ctx, cfg, save)` retains its all-idle boundary for whole-run
 changes; ordinary Go hosts may use Reload without saving. See
 [host persistence and HTTP installation](MODEL-INSTALLATION.md).
 
+
+## Images
+
+`StartTurnRequest.Images` sends pictures with a prompt (the prompt may then be empty): at most 4, JPEG, PNG, GIF or WebP, 3.75 MiB together, each checked against its declared type. They are saved in history as `input_image` parts with data URLs and sent with every later request, so the model keeps seeing them until compaction summarizes the message as `User: … [image]`. Context estimates count each image as about 1,500 tokens, not its encoded size. `HistoryItem.Images` and `TurnStartedPayload.Images` give the count; image data is not returned by history. A model whose provider reports no vision support (`Model.NoImages`, set by `ConfiguredModel` from `DiscoveredModel.SupportsImages`) refuses such prompts with `invalid_argument` before anything is saved. Images cross `SwitchModel` with their messages; a model that cannot read images (after a switch, or once its catalog entry says so) gets `[image]` notes in their place instead. Steering, Continue and subagent prompts carry text only: send images when the session is idle.
+
+Images are sent again with every later request until compaction, while the estimate counts each as about 1,500 tokens, so a conversation with many large pictures can grow beyond what a provider accepts in one request before compaction triggers. We do not guard against that: shrink pictures before sending (screens and photos read well at about 1,600 pixels), and if a provider rejects the request size, start a new session.
 
 ## Errors
 
@@ -511,7 +521,7 @@ Every session/auth mutating request has a `RequestID` that the caller chooses. H
 | `GetSession(ctx, id)` → `Session` | Phase, pause flag, binding, active turn/compaction, running tools, queued tools, pending guidance count, last event sequence, active-operation replay cursor, main and compaction usage. |
 | `RenameSession(ctx, RenameSessionRequest)` → `Session` | Allowed any time. |
 | `DeleteSession(ctx, DeleteSessionRequest)` | Idle only, otherwise `conflict`; unfinished owned children return `children_busy`. Allowed parent deletion preserves child history and their non-delegating role. Removes all session records (request IDs are kept), then stops background processes started for the session by this runtime and waits until they are reaped (up to the 2 s kill grace) or `ctx` ends; cleanup continues either way and `Close` waits for it. If observation fails, deletion has committed but the method returns `process_observation_failed` and does not claim the command stopped. Workspace and log files are left alone. |
-| `StartTurn(ctx, StartTurnRequest{RequestID, SessionID, Prompt})` → `TurnAck` | Idle only (a busy session returns `conflict`; steer instead). Applies pending and paused guidance first, then the prompt, and clears the pause. Returns immediately. |
+| `StartTurn(ctx, StartTurnRequest{RequestID, SessionID, Prompt, Images})` → `TurnAck` | Idle only (a busy session returns `conflict`; steer instead). Applies pending and paused guidance first, then the prompt, and clears the pause. Returns immediately. See [Images](#images). |
 | `StartSubagent(ctx, StartSubagentRequest)` → `TurnAck` | Atomically create a one-level child and accept its first turn. Optional `Config *SessionOverrides` selects model/provider alias, account, thinking and other settings without expanding inherited tool authority. [Selections, ownership and recovery](SUBAGENTS.md). |
 | `Subagents(ctx, parentID)` → `[]Subagent` | Direct children with ordinary session snapshots, latest saved turn outcome, account and history/event references. |
 | `Steer(ctx, SteerRequest{RequestID, SessionID, Text})` → `SteerAck` | Always saved first. Running: applied before the next model request. Idle and unpaused: starts a turn (`TurnID` set). Paused: waits, with `Paused` set in the ack. During manual compaction: waits for the compaction result. |
@@ -610,7 +620,7 @@ type Event struct {
 
 | Kind | Payload type |
 | --- | --- |
-| `turn.started` | `TurnStartedPayload{Source, Prompt, Model, Account, Reasoning}` (`Reasoning` is `"summaries"` or `"unavailable"`; `Account` only for login providers) |
+| `turn.started` | `TurnStartedPayload{Source, Prompt, Images, Model, Account, Reasoning}` (`Reasoning` is `"summaries"` or `"unavailable"`; `Account` only for login providers) |
 | `turn.completed` / `turn.cancelled` / `turn.failed` / `turn.interrupted` | `TurnEndedPayload{Reason, Code, Error, ProviderFailure}` (`Code` is the error code of a failed turn) |
 | `text.delta`, `reasoning.delta`, `refusal.delta` | `DeltaPayload{Text}`, batched to about 16 KiB or 50 ms. Reasoning deltas insert the same blank line between summary parts as saved history text |
 | `response.refusal` | `RefusalPayload{Code: "model_refusal", Text}`: the complete refusal of a completed response |

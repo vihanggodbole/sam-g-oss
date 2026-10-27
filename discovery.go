@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -35,6 +36,7 @@ type DiscoveredModel struct {
 	ReasoningEfforts   []string        `json:"reasoning_efforts"`
 	ReasoningSummaries *bool           `json:"reasoning_summaries,omitempty"`
 	SupportsReasoning  *bool           `json:"supports_reasoning,omitempty"`
+	SupportsImages     *bool           `json:"supports_images,omitempty"`
 	Reference          *ModelReference `json:"reference,omitempty"`
 }
 
@@ -223,4 +225,52 @@ func publicProviderError(err error) error {
 		return &Error{Code: CodeProviderError, Message: me.msg, ProviderFailure: me.failure}
 	}
 	return err
+}
+
+// FallbackContextTokens is the context budget ConfiguredModel assumes when the
+// provider reports no window and the host chose none.
+const FallbackContextTokens = 128000
+
+// ConfiguredModel turns one discovered model into a definition for provider
+// and account, the way the stock server installs catalogs. contextTokens 0
+// uses the reported window (or FallbackContextTokens); a positive value is
+// capped by the reported window. A model this runtime cannot use carries the
+// reason in Unavailable instead of being dropped.
+func ConfiguredModel(provider, account string, d DiscoveredModel, contextTokens int) Model {
+	if contextTokens == 0 {
+		contextTokens = FallbackContextTokens
+		if d.ContextTokens != nil && *d.ContextTokens > 0 {
+			contextTokens = *d.ContextTokens
+		}
+	} else if d.ContextTokens != nil && *d.ContextTokens > 0 {
+		contextTokens = min(contextTokens, *d.ContextTokens)
+	}
+	m := Model{API: d.API, Provider: provider, ModelID: d.ID, DisplayName: d.DisplayName, ContextTokens: contextTokens, CatalogAccount: new(account), ReasoningEfforts: slices.Clone(d.ReasoningEfforts)}
+	m.ReasoningSummaries = d.ReasoningSummaries != nil && *d.ReasoningSummaries
+	m.NoImages = d.SupportsImages != nil && !*d.SupportsImages
+	if d.MaxOutputTokens != nil {
+		m.MaxOutputTokens = *d.MaxOutputTokens
+	}
+	if d.API == APIAnthropicMessages {
+		// Exact-ID codec profile supports summarized/omitted native display.
+		// This declaration is not a provider-reported Responses summary flag.
+		m.ReasoningSummaries = true
+	}
+	switch {
+	case d.Availability == "unavailable" || d.Availability == "requires_action":
+		m.Unavailable = d.Availability
+	case d.API == APIAnthropicMessages && d.SupportsReasoning != nil && !*d.SupportsReasoning:
+		m.Unavailable = "the provider reports no thinking support; the native Opus 5.5 profile requires adaptive thinking"
+	case d.API == APIAnthropicMessages:
+		if d.MaxOutputTokens == nil {
+			m.Unavailable = "Messages output limit is unreported; verify max_output_tokens and configure manually"
+		}
+	case d.SupportsMessages != nil && *d.SupportsMessages && (d.SupportsResponses == nil || !*d.SupportsResponses):
+		m.Unavailable = "Messages transport is reported, but this model's native profile is not supported"
+	case d.SupportsResponses == nil:
+		m.Unavailable = "Responses support is unreported; verify and configure manually to use this model"
+	case !*d.SupportsResponses:
+		m.Unavailable = "this model does not support Responses"
+	}
+	return m
 }

@@ -109,6 +109,7 @@ type (
 	TurnStartedPayload struct {
 		Source    string `json:"source"`
 		Prompt    string `json:"prompt,omitempty"`
+		Images    int    `json:"images,omitempty"` // number of images sent with the prompt
 		Model     string `json:"model"`
 		Account   string `json:"account,omitempty"` // login account, for subscription providers
 		Reasoning string `json:"reasoning"`

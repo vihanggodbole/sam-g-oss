@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"slices"
 	"sync"
 
 	sam "github.com/vihanggodbole/sam-g-oss"
@@ -85,8 +84,6 @@ func (h *catalogHost) Discover(ctx context.Context, provider, account string) (s
 	return server.CatalogSnapshot{Models: models, SnapshotID: p.id}, nil
 }
 
-const fallbackCatalogContextTokens = 128000
-
 func (h *catalogHost) Install(ctx context.Context, req server.InstallCatalogRequest) (server.InstallCatalogResult, error) {
 	var result server.InstallCatalogResult
 	if !h.mu.TryLock() {
@@ -149,7 +146,7 @@ func catalogCandidate(file fileConfig, req server.InstallCatalogRequest, models 
 		if _, collision := candidate.Models[alias]; collision {
 			return candidate, result, nil, catalogConflict("managed alias collides with a manual model; rename the manual entry first")
 		}
-		m := installedModel(req, discovered)
+		m := sam.ConfiguredModel(req.Provider, req.Account, discovered, req.ContextTokens)
 		if canRetainReasoningSummaries(file.Models[alias], m, discovered.ReasoningSummaries) {
 			m.ReasoningSummaries = true
 		}
@@ -209,45 +206,6 @@ func canRetainReasoningSummaries(previous, next sam.Model, reported *bool) bool 
 		previous.Provider == next.Provider && previous.ModelID == next.ModelID &&
 		previous.CatalogAccount != nil && next.CatalogAccount != nil &&
 		*previous.CatalogAccount == *next.CatalogAccount
-}
-
-func installedModel(req server.InstallCatalogRequest, d sam.DiscoveredModel) sam.Model {
-	contextTokens := req.ContextTokens
-	if contextTokens == 0 {
-		contextTokens = fallbackCatalogContextTokens
-		if d.ContextTokens != nil && *d.ContextTokens > 0 {
-			contextTokens = *d.ContextTokens
-		}
-	} else if d.ContextTokens != nil && *d.ContextTokens > 0 {
-		contextTokens = min(contextTokens, *d.ContextTokens)
-	}
-	m := sam.Model{API: d.API, Provider: req.Provider, ModelID: d.ID, DisplayName: d.DisplayName, ContextTokens: contextTokens, CatalogAccount: new(req.Account), ReasoningEfforts: slices.Clone(d.ReasoningEfforts)}
-	m.ReasoningSummaries = d.ReasoningSummaries != nil && *d.ReasoningSummaries
-	if d.MaxOutputTokens != nil {
-		m.MaxOutputTokens = *d.MaxOutputTokens
-	}
-	if d.API == sam.APIAnthropicMessages {
-		// Exact-ID codec profile supports summarized/omitted native display.
-		// This declaration is not a provider-reported Responses summary flag.
-		m.ReasoningSummaries = true
-	}
-	switch {
-	case d.Availability == "unavailable" || d.Availability == "requires_action":
-		m.Unavailable = d.Availability
-	case d.API == sam.APIAnthropicMessages && d.SupportsReasoning != nil && !*d.SupportsReasoning:
-		m.Unavailable = "the provider reports no thinking support; the native Opus 5.5 profile requires adaptive thinking"
-	case d.API == sam.APIAnthropicMessages:
-		if d.MaxOutputTokens == nil {
-			m.Unavailable = "Messages output limit is unreported; verify max_output_tokens and configure manually"
-		}
-	case d.SupportsMessages != nil && *d.SupportsMessages && (d.SupportsResponses == nil || !*d.SupportsResponses):
-		m.Unavailable = "Messages transport is reported, but this model's native profile is not supported"
-	case d.SupportsResponses == nil:
-		m.Unavailable = "Responses support is unreported; verify and configure manually to use this model"
-	case !*d.SupportsResponses:
-		m.Unavailable = "this model does not support Responses"
-	}
-	return m
 }
 
 // Config edits are operator-owned: no transparent merging with an external

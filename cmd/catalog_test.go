@@ -89,23 +89,23 @@ func TestCatalogRetainsOnlyMatchingResponsesSummaryDeclarations(t *testing.T) {
 func TestInstalledMessagesModelRequiresReportedOutputBound(t *testing.T) {
 	d := sam.DiscoveredModel{ID: "claude-opus-5.5", API: sam.APIAnthropicMessages, SupportsResponses: new(false), SupportsMessages: new(true), MaxOutputTokens: new(64000), Availability: "available", ReasoningEfforts: []string{"low", "high"}}
 	req := server.InstallCatalogRequest{Provider: "copilot", Account: "personal"}
-	m := installedModel(req, d)
-	if m.API != sam.APIAnthropicMessages || m.MaxOutputTokens != 64000 || m.Unavailable != "" || !m.ReasoningSummaries || m.ContextTokens != fallbackCatalogContextTokens {
+	m := sam.ConfiguredModel(req.Provider, req.Account, d, req.ContextTokens)
+	if m.API != sam.APIAnthropicMessages || m.MaxOutputTokens != 64000 || m.Unavailable != "" || !m.ReasoningSummaries || m.ContextTokens != sam.FallbackContextTokens {
 		t.Fatal(m)
 	}
 	d.MaxOutputTokens = nil
-	if m = installedModel(req, d); m.Unavailable == "" || m.MaxOutputTokens != 0 {
+	if m = sam.ConfiguredModel(req.Provider, req.Account, d, req.ContextTokens); m.Unavailable == "" || m.MaxOutputTokens != 0 {
 		t.Fatal("advisory maximum became executable", m)
 	}
 	d.MaxOutputTokens = new(64000)
 	d.Availability = "requires_action"
-	if m = installedModel(req, d); m.Unavailable != "requires_action" {
+	if m = sam.ConfiguredModel(req.Provider, req.Account, d, req.ContextTokens); m.Unavailable != "requires_action" {
 		t.Fatal("policy denial concealed", m)
 	}
 	d.API = ""
 	d.ID = "claude-haiku-4.5"
 	d.Availability = "available"
-	if m = installedModel(req, d); m.Unavailable == "" {
+	if m = sam.ConfiguredModel(req.Provider, req.Account, d, req.ContextTokens); m.Unavailable == "" {
 		t.Fatal("older budget-thinking model admitted", m)
 	}
 }

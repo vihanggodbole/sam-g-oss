@@ -106,6 +106,12 @@ func (in *messagesInput) add(item outputItem) error {
 		switch c.Type {
 		case "input_text", "output_text":
 			blocks = append(blocks, messagesText(c.Text))
+		case "input_image":
+			mediaType, data, ok := splitDataURL(c.ImageURL)
+			if !ok || item.Role != "user" {
+				return messagesHistoryError("only images sent by the user as data can enter Messages")
+			}
+			blocks = append(blocks, map[string]any{"type": "image", "source": map[string]string{"type": "base64", "media_type": mediaType, "data": data}})
 		case "refusal":
 			if item.Role != "assistant" {
 				return messagesHistoryError("refusal content in a non-assistant message")

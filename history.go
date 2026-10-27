@@ -33,6 +33,7 @@ type HistoryItem struct {
 	Status     string           `json:"status,omitempty"` // tool results: completed, failed, cancelled, uncertain, not_executed
 	Role       string           `json:"role,omitempty"`
 	Text       string           `json:"text,omitempty"`
+	Images     int              `json:"images,omitempty"` // images sent with a user message; their data is not returned
 	CallID     string           `json:"call_id,omitempty"`
 	Name       string           `json:"name,omitempty"`
 	Namespace  string           `json:"namespace,omitempty"`
@@ -212,7 +213,7 @@ func (h histItem) visible() HistoryItem {
 			v.Category = CategoryError
 		}
 	default:
-		v.Text = it.text()
+		v.Text, v.Images = it.text(), it.imageCount()
 		if it.refusal() != "" {
 			v.Category, v.Code = CategoryError, codeModelRefusal
 		}
@@ -246,7 +247,7 @@ func (h histItem) portable() string {
 	if h.kind == kindNote {
 		return v.Text
 	}
-	return "User: " + v.Text
+	return "User: " + withImageNotes(v.Text, v.Images)
 }
 
 // projectItem prepares a stored item for a model request. Reasoning items are
@@ -360,6 +361,11 @@ func (v *contextView) project(h histItem) (json.RawMessage, bool) {
 			if item.Role == "assistant" {
 				contentType = "output_text"
 			}
+			if item.Role == "user" && item.imageCount() > 0 { // pictures cross a handoff as saved, with their text
+				var saved struct{ Content json.RawMessage }
+				_ = json.Unmarshal(h.item, &saved)
+				return json.RawMessage(mustJSON(map[string]any{"type": "message", "role": "user", "content": saved.Content})), true
+			}
 			return json.RawMessage(mustJSON(map[string]any{"type": "message", "role": item.Role, "content": []map[string]string{{"type": contentType, "text": item.text()}}})), true
 		}
 		if item.Type == "reasoning" || item.Type == "function_call" || item.Type == "function_call_output" {
@@ -412,5 +418,12 @@ func modelInputBytes(raw json.RawMessage) int {
 			return len(mustJSON(block))
 		}
 	}
-	return len(raw)
+	// An image counts as its provider cost, never as its base64 text.
+	n := len(raw)
+	for _, c := range item.Content {
+		if c.Type == "input_image" {
+			n += imageCostBytes - len(c.ImageURL)
+		}
+	}
+	return n
 }
