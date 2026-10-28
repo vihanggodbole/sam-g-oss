@@ -317,10 +317,24 @@ func (m resolvedModel) supportsReasoning() bool {
 	return m.API.effective() == APIAnthropicMessages || len(m.ReasoningEfforts) > 0 || m.ReasoningSummaries
 }
 
-// outputReserve is the configured reserve or min(8192, context/4).
+// defaultOutputCap bounds a Messages model's default reply cap.
+const defaultOutputCap = 128_000
+
+// outputReserve is the configured reserve or, by default, for a Messages
+// model (whose replies it caps, thinking included) its verified maximum
+// output up to defaultOutputCap and half its context, and for others
+// min(8192, context/4), which only keeps input room since nothing caps their
+// replies.
 func (m resolvedModel) outputReserve(configured int) int {
 	if configured > 0 {
 		return configured
+	}
+	if m.API == APIAnthropicMessages && m.MaxOutputTokens > 0 {
+		reserve := min(m.MaxOutputTokens, defaultOutputCap)
+		if m.ContextTokens > 0 {
+			reserve = min(reserve, m.ContextTokens/2)
+		}
+		return reserve
 	}
 	return min(8192, m.ContextTokens/4)
 }
@@ -522,7 +536,7 @@ func validateModelOptions(c SessionConfig, m, cm resolvedModel) error {
 		}
 		if cc.OutputReserve >= rm.ContextTokens {
 			return errorf(CodeInvalidArgument, "compaction.output_reserve %d leaves no input context for model %q (context_tokens %d); "+
-				"use a smaller reserve, or 0 for min(8192, context/4)", cc.OutputReserve, rm.Alias, rm.ContextTokens)
+				"use a smaller reserve, or 0 for the default (see outputReserve)", cc.OutputReserve, rm.Alias, rm.ContextTokens)
 		}
 	}
 	return nil

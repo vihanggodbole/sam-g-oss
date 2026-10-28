@@ -114,7 +114,7 @@ type CompactionConfig struct {
     Prompt         string `json:"prompt"`          // inline prompt, or
     PromptFile     string `json:"prompt_file"`     // contents prepared at setup/reload (not both)
     DisableAuto    bool   `json:"disable_auto"`
-    OutputReserve  int    `json:"output_reserve"`  // 0 means min(8192, context/4); must be below each model's context
+    OutputReserve  int    `json:"output_reserve"`  // 0: a Messages model's max output up to 128000 and context/2, else min(8192, context/4); must be below each model's context
     TriggerPercent int    `json:"trigger_percent"` // 0 means 90 (% of input budget)
     RecentPercent  int    `json:"recent_percent"`  // 0 means 20 (minimum % of input budget kept verbatim)
 }
@@ -178,11 +178,13 @@ no Anthropic API key, Claude Code OAuth, Pi process or older budget-thinking mod
 is versioned separately from live acceptance.
 
 - **Output:** the operation's existing `compaction.output_reserve` becomes
-  Messages `max_tokens`, including thinking. Zero retains the existing reserve
-  calculation `min(8192, context_tokens/4)`, separately for main and summary models.
-  The result must be positive, below context capacity and at most that model's
-  verified maximum output. Invalid settings fail; there is no clamp or new token
-  default. Responses requests still have no new hard output cap.
+  Messages `max_tokens`, including thinking. Zero uses the model's verified
+  maximum output, at most 128000 and half its context, separately for main and
+  summary models, so replies and thinking are not cut short by a small default;
+  for Responses models zero stays `min(8192, context_tokens/4)`, which only keeps
+  input room. A configured result must be positive, below context capacity and
+  at most that model's verified maximum output. Invalid settings fail; there is
+  no clamp. Responses requests still have no hard output cap.
 - **Thinking:** always `thinking.type=adaptive`. Empty effort omits
   `output_config.effort` for the provider default; nonempty effort must be declared
   by the installed model and one of low/medium/high/xhigh/max. Off/minimal fail.

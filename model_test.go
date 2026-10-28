@@ -68,6 +68,18 @@ func TestDecodeFragmentedInterleavedStream(t *testing.T) {
 	}
 }
 
+// An error body too long to classify is retried only for a gateway status,
+// whose body is typically an HTML page; an unclassified 429 may be a plan limit.
+func TestOversizedErrorRetriesOnlyGateways(t *testing.T) {
+	page := strings.Repeat("<p>error</p>", 500)
+	for status, retry := range map[int]bool{502: true, 503: true, 504: true, 429: false, 500: false, 400: false} {
+		resp := &http.Response{StatusCode: status, Header: http.Header{}, Body: io.NopCloser(strings.NewReader(page))}
+		if got := statusError(resp).retryable; got != retry {
+			t.Errorf("HTTP %d with an unreadable body: retryable %v, want %v", status, got, retry)
+		}
+	}
+}
+
 func TestDiagnosticsRedactBeforeShortening(t *testing.T) {
 	const key = "sk-synthetic-0123456789abcdef"
 	// The key sits across the 1024-byte display bound.

@@ -25,9 +25,20 @@ func statusErrorForAPI(resp *http.Response, api ModelAPI, secrets ...string) *mo
 	raw, readErr := io.ReadAll(io.LimitReader(resp.Body, 4097))
 	if len(raw) > 4096 || readErr != nil {
 		// Do not turn a truncated, unclassified plan error into a generic
-		// 429/503 retry. Preserve the known status/request ID, not a raw bag.
+		// 429 retry. Preserve the known status/request ID, not a raw bag. A
+		// gateway failure (502, 503, 504) is the exception: its oversized body
+		// is typically an HTML error page from in front of the model, and the
+		// outage passes, so it is retried like any readable one.
+		gateway := resp.StatusCode == http.StatusBadGateway || resp.StatusCode == http.StatusServiceUnavailable || resp.StatusCode == http.StatusGatewayTimeout
 		msg := "provider error body could not be read within the 4 KiB diagnostic bound; its code is unknown and this request is not retried"
-		return sanitizeModelError(&modelError{msg: msg, failure: &ProviderFailure{HTTPStatus: resp.StatusCode, RequestID: resp.Header.Get("x-request-id"), Message: msg, Shape: "unknown"}}, secrets...)
+		if gateway {
+			msg = "provider gateway error body could not be read within the 4 KiB diagnostic bound; its code is unknown and the request is retried"
+		}
+		e := &modelError{msg: msg, retryable: gateway, failure: &ProviderFailure{HTTPStatus: resp.StatusCode, RequestID: resp.Header.Get("x-request-id"), Message: msg, Shape: "unknown", Retryable: gateway}}
+		if gateway {
+			e.retryAfter, _ = parseRetryAdvice(resp.Header.Get("Retry-After"), time.Now())
+		}
+		return sanitizeModelError(e, secrets...)
 	}
 	var envelope struct {
 		Error  json.RawMessage `json:"error"`
