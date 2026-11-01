@@ -54,7 +54,8 @@ type ToolCall struct {
 	// Output captures and streams output under the call's byte limit.
 	Output *Output
 
-	launched *[]*bgProc // background processes this call started, until its result is saved
+	launched *[]*bgProc    // background processes this call started, until its result is saved
+	attached *[]Attachment // files for the result (Attach), kept only on success
 }
 
 // ToolInfo describes a registered tool without its implementation.
@@ -295,6 +296,7 @@ func (r *Runtime) executeCall(ctx context.Context, t *turnRun, c plannedCall, to
 	b := &batcher{r: r, base: base}
 	out := &Output{limit: t.cfg.ToolOutputLimit, cancel: cancel, emit: func(s string, p []byte) { b.add(EventToolOutput, s, p) }}
 	var launched []*bgProc
+	var attached []Attachment
 	defer func() {
 		// A background process whose launch result could not be saved is
 		// stopped: nothing durable would identify it. Earlier, acknowledged
@@ -313,7 +315,7 @@ func (r *Runtime) executeCall(ctx context.Context, t *turnRun, c plannedCall, to
 	}
 	text, runErr := tool.Run(callCtx, ToolCall{
 		SessionID: t.sessionID, TurnID: t.turnID, CallID: c.CallID, Attempt: c.Attempt, uncertain: c.Uncertain,
-		Workspace: t.workspace, Arguments: json.RawMessage(c.Arguments), Output: out, launched: &launched,
+		Workspace: t.workspace, Arguments: json.RawMessage(c.Arguments), Output: out, launched: &launched, attached: &attached,
 	})
 	if err := b.flush(); err != nil {
 		return err
@@ -322,7 +324,10 @@ func (r *Runtime) executeCall(ctx context.Context, t *turnRun, c plannedCall, to
 	if status == "cancelled" && errors.Is(context.Cause(ctx), errShutdown) {
 		return r.suspendCall(t, c, true)
 	}
-	return r.finishCall(t, c, status, result)
+	if status != "completed" {
+		attached = nil
+	}
+	return r.finishCall(t, c, status, result, attached...)
 }
 
 // classifyCall turns a finished Run into the call's status and result. A
@@ -380,21 +385,25 @@ func identifiableCancellation(ctx context.Context, err error) bool {
 	return err != nil && ctx.Err() != nil && (errors.Is(err, ctx.Err()) || errors.Is(err, context.Cause(ctx)))
 }
 
-func (r *Runtime) finishCall(t *turnRun, c plannedCall, status, result string) error {
+func (r *Runtime) finishCall(t *turnRun, c plannedCall, status, result string, files ...Attachment) error {
 	if c.Uncertain && status == "completed" && len(uncertainWarning)+1+len(result) > t.cfg.ToolOutputLimit {
 		status, result = "failed", toolError("tool_output_limit", limitMessage(c.Name, t.cfg.ToolOutputLimit), t.cfg.ToolOutputLimit)
 	}
 	result = uncertainResult(c, status, result, t.cfg.ToolOutputLimit)
 	return r.tx(func(tx *sql.Tx) error {
-		return saveCallResult(tx, t.sessionID, t.turnID, t.step, c, status, result)
+		return saveCallResult(tx, t.sessionID, t.turnID, t.step, c, status, result, files...)
 	})
 }
 
 // Normal execution and recovery publish tool outcomes through the same owner.
 // Batch assembly later pairs these results with calls in original model order.
-func saveCallResult(tx *sql.Tx, sid, tid string, step int, c plannedCall, status, result string) error {
-	if _, err := tx.ExecContext(bg, "UPDATE tool_calls SET status = ?, output = ?, ended_at = ? WHERE turn_id = ? AND call_id = ?",
-		status, result, nowMillis(), tid, c.CallID); err != nil {
+func saveCallResult(tx *sql.Tx, sid, tid string, step int, c plannedCall, status, result string, files ...Attachment) error {
+	var attachments any
+	if len(files) > 0 {
+		attachments = mustJSON(files)
+	}
+	if _, err := tx.ExecContext(bg, "UPDATE tool_calls SET status = ?, output = ?, attachments = ?, ended_at = ? WHERE turn_id = ? AND call_id = ?",
+		status, result, attachments, nowMillis(), tid, c.CallID); err != nil {
 		return err
 	}
 	kind := map[string]string{"completed": EventToolCompleted, "failed": EventToolFailed, "uncertain": EventToolFailed, "cancelled": EventToolCancelled, "not_executed": EventToolCancelled}[status]
@@ -410,19 +419,19 @@ func saveCallResult(tx *sql.Tx, sid, tid string, step int, c plannedCall, status
 func closeOpenCalls(tx *sql.Tx, sessionID string) error { return assembleCalls(tx, sessionID, true) }
 
 func assembleCalls(tx *sql.Tx, sessionID string, terminal bool) error {
-	rows, err := tx.QueryContext(bg, `SELECT turn_id, call_id, status, COALESCE(output, ''), had_uncertain_attempt FROM tool_calls
+	rows, err := tx.QueryContext(bg, `SELECT turn_id, call_id, status, COALESCE(output, ''), had_uncertain_attempt, COALESCE(attachments, '') FROM tool_calls
 		WHERE session_id = ? AND history_seq IS NULL ORDER BY rowid`, sessionID)
 	if err != nil {
 		return err
 	}
 	type open struct {
-		turnID, callID, status, output string
-		uncertain                      bool
+		turnID, callID, status, output, attachments string
+		uncertain                                   bool
 	}
 	var calls []open
 	for rows.Next() {
 		var o open
-		if err := rows.Scan(&o.turnID, &o.callID, &o.status, &o.output, &o.uncertain); err != nil {
+		if err := rows.Scan(&o.turnID, &o.callID, &o.status, &o.output, &o.uncertain, &o.attachments); err != nil {
 			rows.Close()
 			return err
 		}
@@ -447,12 +456,19 @@ func assembleCalls(tx *sql.Tx, sessionID string, terminal bool) error {
 		if c.uncertain && (c.status == "planned" || c.status == "started") {
 			status, output = "uncertain", toolError("uncertain", uncertainWarning+" The current attempt did not finish before the operation stopped.", 0)
 		}
+		var files []Attachment
+		if status == "completed" && c.attachments != "" {
+			if err := json.Unmarshal([]byte(c.attachments), &files); err != nil {
+				return err
+			}
+		}
 		seq, err := appendHistory(tx, sessionID, c.turnID, kindToolResult, "",
-			map[string]any{"type": "function_call_output", "call_id": c.callID, "output": output})
+			map[string]any{"type": "function_call_output", "call_id": c.callID, "output": resultOutput(output, files)})
 		if err != nil {
 			return err
 		}
-		if _, err := tx.ExecContext(bg, "UPDATE tool_calls SET status = ?, output = ?, history_seq = ?, ended_at = COALESCE(ended_at, ?) WHERE turn_id = ? AND call_id = ?",
+		// The files now live in history; the call keeps its text result.
+		if _, err := tx.ExecContext(bg, "UPDATE tool_calls SET status = ?, output = ?, attachments = NULL, history_seq = ?, ended_at = COALESCE(ended_at, ?) WHERE turn_id = ? AND call_id = ?",
 			status, output, seq, nowMillis(), c.turnID, c.callID); err != nil {
 			return err
 		}

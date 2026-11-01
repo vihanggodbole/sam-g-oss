@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -24,7 +25,7 @@ func fileTools(lock *sync.RWMutex) []Tool {
 	return []Tool{
 		{
 			Name:        "read",
-			Description: "Read a UTF-8 text file. Relative paths resolve against the workspace. Use offset (1-based line) and limit (line count) to read part of a large file.",
+			Description: "Read a UTF-8 text file, or see a PDF or picture (PNG, JPEG, GIF, WebP) itself: it is attached to the result. Relative paths resolve against the workspace. Use offset (1-based line) and limit (line count) to read part of a large text file.",
 			Parameters: json.RawMessage(`{"type":"object","properties":{` +
 				`"path":{"type":"string","description":"File path"},` +
 				`"offset":{"type":"integer","description":"First line to read, 1-based"},` +
@@ -145,7 +146,30 @@ func readTool(ctx context.Context, lock *sync.RWMutex, c ToolCall) (string, erro
 		return "", err
 	}
 	defer f.Close()
-	return copyLines(ctx, bufio.NewReaderSize(f, 64<<10), c.Output, max(1, a.Offset), a.Limit)
+	br := bufio.NewReaderSize(f, 64<<10)
+	head, _ := br.Peek(512)
+	if mediaType := http.DetectContentType(head); slices.Contains(attachmentTypes, mediaType) {
+		return attachFile(c, br, filepath.Base(target), mediaType)
+	}
+	return copyLines(ctx, br, c.Output, max(1, a.Offset), a.Limit)
+}
+
+// attachFile attaches a PDF or picture for the model to see natively.
+func attachFile(c ToolCall, r io.Reader, name, mediaType string) (string, error) {
+	data, err := io.ReadAll(io.LimitReader(r, maxAttachmentBytes+1))
+	if err != nil {
+		return "", err
+	}
+	if len(data) > maxAttachmentBytes {
+		return "", fmt.Errorf("%s is larger than %d MiB, too large to attach; read part of it another way", name, maxAttachmentBytes>>20)
+	}
+	if err := c.Attach(Attachment{Name: name, MediaType: mediaType, Data: data}); err != nil {
+		return "", err
+	}
+	if mediaType == "application/pdf" {
+		return fmt.Sprintf("%s (a PDF of about %d pages) is attached to this result.", name, max(1, pdfPages(data))), nil
+	}
+	return name + " is attached to this result.", nil
 }
 
 // copyLines writes the selected lines. A NUL byte in the first 8 KiB marks

@@ -196,7 +196,7 @@ is versioned separately from live acceptance.
   become system text blocks. Historical developer instructions become native
   system messages in their original position, not user data; BeforeRequest data
   retains its user-shaped application provenance. Text, user images (as base64
-  image blocks) and local tools only: other images,
+  image blocks), files tools attached (as `document` or `image` blocks inside the `tool_result`) and local tools only: other images,
   citations, server tools, unknown blocks and unsupported roles fail before sending
   or accepting the response. Instructions/messages interrupting the required
   tool-use/result adjacency fail before sending rather than being moved or dropped.
@@ -710,7 +710,11 @@ type ToolCall struct {
     Arguments json.RawMessage
     Output *Output
 }
+func (c ToolCall) Attach(a Attachment) error // a PDF or picture for the model to see natively
+type Attachment struct{ Name, MediaType string; Data []byte }
 ```
+
+**Attached files.** `call.Attach` adds a PDF or picture (`application/pdf`, JPEG, PNG, GIF or WebP, checked against its contents; at most 10 MiB per call) to the call's result, so the model reads the file itself rather than text extracted from it. Attachments are kept only when the call completes; they are saved with the result and enter history as part of its `function_call_output`, whose `output` is then a list (`input_text`, then `input_file` with `filename` and a `file_data` data URL for a PDF, or `input_image`) instead of a string. Responses requests send that list as is; Messages requests send the result's text plus a `document` (PDF) or `image` block inside the `tool_result`. Like prompt images, files are sent with every later request until compaction summarizes the result as `… [file NAME]`; the context estimate counts about one picture per PDF page, not the encoded size. A model with `NoImages` gets the `[file NAME]` / `[image]` notes instead. Whether a provider and account accept files in tool results is the provider's to decide: a refusal fails the request with the provider's error, and nothing is converted to text behind your back.
 
 `Run` must honor `ctx`. When it stops because the context ended, return or wrap `ctx.Err()` or `context.Cause(ctx)` so `errors.Is` identifies cancellation. Nil means known success even after cancellation; other errors remain known failures. Explicit overflow/process-observation errors stay known. Only identifiable shutdown cancellation of invoked code becomes pending/uncertain for recovery. `(SessionID, TurnID, CallID)` is the stable logical identity; Attempt counts saved execution intents, not another generated call ID. It should write output through `call.Output` (an `io.Writer`; `Output.Stream(name)` labels a stream), which streams events and enforces the output limit during capture. The returned string is short result metadata appended to the captured output (after a newline when needed). The whole result, captured output plus metadata, must fit the call's output limit. A returned error becomes a `tool_error` result the model can act on: its message (bounded to 2 KiB) plus any captured output, outside the output limit so the failure can always be explained. Host tools with a built-in's name replace it. Disabled tools are not advertised and cannot run: a call to one returns `tool_unavailable`.
 
@@ -720,7 +724,7 @@ Scenario: you register a replacement `bash` but forget `Run`. The runtime starts
 
 Built-ins:
 
-- `read {path, offset?, limit?}` reads text lines (offset is 1-based) and rejects binary files.
+- `read {path, offset?, limit?}` reads text lines (offset is 1-based) and rejects binary files, except that a PDF or picture (detected from its contents) is attached to the result for the model to see natively (see Attached files above; at most 10 MiB).
 - `read` also rejects selected lines that are not valid UTF-8 (a NUL byte in the first 8 KiB marks a binary file). Only regular files are supported.
 - `write {path, content}` creates parent directories and replaces the file atomically (temp file plus rename). `content` is required; a missing or `null` value fails before anything changes, while `""` deliberately writes an empty file.
 - `edit {path, edits: [{old_text, new_text}]}` requires each `old_text` to match exactly once, with no overlaps; overlapping occurrences count too (`aa` in `aaa` is ambiguous). `new_text` is required (`""` deletes the match; missing or `null` fails). Every edit is checked before the file changes, and existing permissions are preserved.

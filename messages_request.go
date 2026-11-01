@@ -173,7 +173,7 @@ func (in *messagesInput) addResult(item outputItem) error {
 		return messagesHistoryError("native tool result has no known saved outcome")
 	}
 	delete(in.pending, item.CallID)
-	block := map[string]any{"type": "tool_result", "tool_use_id": item.CallID, "content": item.Output, "is_error": status != "completed"}
+	block := map[string]any{"type": "tool_result", "tool_use_id": item.CallID, "content": item.Output.messagesContent(), "is_error": status != "completed"}
 	last := &in.messages[len(in.messages)-1]
 	if last.Role != "user" {
 		in.messages = append(in.messages, messagesMessage{Role: "user", Content: []any{block}})

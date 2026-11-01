@@ -186,6 +186,8 @@ ALTER TABLE compactions ADD COLUMN cache_read_tokens INTEGER;
 ALTER TABLE compactions ADD COLUMN cache_write_tokens INTEGER;`,
 	// 15: remember a call's no-replay restriction, not its executable definition.
 	`ALTER TABLE tool_calls ADD COLUMN replay_unsafe INTEGER NOT NULL DEFAULT 0;`,
+	// 16: files a tool attached to its result, until the result enters history.
+	`ALTER TABLE tool_calls ADD COLUMN attachments TEXT;`,
 }
 
 func migrate(ctx context.Context, db *sql.DB) error {

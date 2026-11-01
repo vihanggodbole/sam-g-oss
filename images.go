@@ -74,14 +74,22 @@ func withImageNotes(text string, n int) string {
 	return text + notes
 }
 
-// withoutImages replaces pictures with [image] notes for a model that
-// cannot read them, so a session switched to one keeps working.
+// withoutImages replaces pictures and files tools attached with [image] and
+// [file NAME] notes for a model that cannot read them, so a session switched
+// to one keeps working.
 func withoutImages(input []json.RawMessage) []json.RawMessage {
 	out := make([]json.RawMessage, len(input))
 	for i, raw := range input {
 		var item outputItem
 		if json.Unmarshal(raw, &item) == nil && item.Type == "message" && item.imageCount() > 0 {
 			raw = json.RawMessage(mustJSON(userMessage(withImageNotes(item.text(), item.imageCount()))))
+		}
+		if item.Type == "function_call_output" && item.Output.files() {
+			var m map[string]json.RawMessage
+			if json.Unmarshal(raw, &m) == nil {
+				m["output"] = json.RawMessage(mustJSON(item.Output.String()))
+				raw = json.RawMessage(mustJSON(m))
+			}
 		}
 		out[i] = raw
 	}

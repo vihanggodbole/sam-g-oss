@@ -599,13 +599,13 @@ func readLine(br *bufio.Reader, room int) ([]byte, error) {
 
 // outputItem is the subset of a Responses output item the runtime inspects.
 type outputItem struct {
-	Type      string `json:"type"`
-	Role      string `json:"role"`
-	CallID    string `json:"call_id"`
-	Name      string `json:"name"`
-	Namespace string `json:"namespace,omitempty"`
-	Arguments string `json:"arguments"`
-	Output    string `json:"output"`
+	Type      string     `json:"type"`
+	Role      string     `json:"role"`
+	CallID    string     `json:"call_id"`
+	Name      string     `json:"name"`
+	Namespace string     `json:"namespace,omitempty"`
+	Arguments string     `json:"arguments"`
+	Output    callOutput `json:"output"`
 	Content   []struct {
 		Type     string `json:"type"`
 		Text     string `json:"text"`

@@ -195,7 +195,7 @@ func (h histItem) visible() HistoryItem {
 		}
 		v.Text = strings.Join(parts, reasoningPartSeparator)
 	case "function_call_output":
-		v.Text, v.Status = it.Output, h.callStatus
+		v.Text, v.Status = it.Output.String(), h.callStatus
 		if v.Name == "" {
 			v.Name = h.callName
 		}
@@ -418,8 +418,8 @@ func modelInputBytes(raw json.RawMessage) int {
 			return len(mustJSON(block))
 		}
 	}
-	// An image counts as its provider cost, never as its base64 text.
-	n := len(raw)
+	// An image or attached file counts as its provider cost, never as its base64 text.
+	n := len(raw) + item.Output.costAdjust()
 	for _, c := range item.Content {
 		if c.Type == "input_image" {
 			n += imageCostBytes - len(c.ImageURL)
