@@ -85,11 +85,7 @@ func withoutImages(input []json.RawMessage) []json.RawMessage {
 			raw = json.RawMessage(mustJSON(userMessage(withImageNotes(item.text(), item.imageCount()))))
 		}
 		if item.Type == "function_call_output" && item.Output.files() {
-			var m map[string]json.RawMessage
-			if json.Unmarshal(raw, &m) == nil {
-				m["output"] = json.RawMessage(mustJSON(item.Output.String()))
-				raw = json.RawMessage(mustJSON(m))
-			}
+			raw = filesAsNotes(raw, item)
 		}
 		out[i] = raw
 	}

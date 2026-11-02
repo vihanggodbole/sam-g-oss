@@ -24,6 +24,11 @@ type Attachment struct {
 // every file still in the conversation against each request's size limit.
 const maxAttachmentBytes = 10 << 20
 
+// maxRequestFileBytes bounds the encoded files one request carries. Providers
+// accept requests of about 32 MB (Messages and Responses alike), and the
+// conversation's text must fit beside the files.
+const maxRequestFileBytes = 20 << 20
+
 var attachmentTypes = append([]string{"application/pdf"}, imageTypes...)
 
 // Attach adds a file to the call's result, for the model to read natively. It
@@ -179,8 +184,49 @@ func (o callOutput) messagesContent() any {
 	return blocks
 }
 
+// pdfPage matches a page object ("/Type /Page", not "/Pages"). Pages inside
+// compressed object streams are not visible to it.
 var pdfPage = regexp.MustCompile(`/Type\s*/Page[^s]`)
 
 // pdfPages counts a PDF's page objects; compressed object streams can hide
 // them, so this is an estimate for context accounting only.
 func pdfPages(data []byte) int { return len(pdfPage.FindAllIndex(data, -1)) }
+
+// capRequestFiles keeps the newest tool-attached files within
+// maxRequestFileBytes and turns older ones into [file NAME] notes, so files
+// read earlier in a long chat cannot push a request past what a provider
+// accepts before compaction summarizes them.
+func capRequestFiles(input []json.RawMessage) []json.RawMessage {
+	out := slices.Clone(input)
+	total := 0
+	for i := len(out) - 1; i >= 0; i-- {
+		var item outputItem
+		if json.Unmarshal(out[i], &item) != nil || item.Type != "function_call_output" || !item.Output.files() {
+			continue
+		}
+		total += item.Output.fileBytes()
+		if total > maxRequestFileBytes {
+			out[i] = filesAsNotes(out[i], item)
+		}
+	}
+	return out
+}
+
+// fileBytes is the encoded size of the output's files.
+func (o callOutput) fileBytes() int {
+	n := 0
+	for _, p := range o.parts {
+		n += len(p.FileData) + len(p.ImageURL)
+	}
+	return n
+}
+
+// filesAsNotes is a saved tool result with its files replaced by notes.
+func filesAsNotes(raw json.RawMessage, item outputItem) json.RawMessage {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &m); err != nil {
+		panic("a saved tool result is not a JSON object: " + err.Error()) // it was just parsed as one
+	}
+	m["output"] = json.RawMessage(mustJSON(item.Output.String()))
+	return json.RawMessage(mustJSON(m))
+}

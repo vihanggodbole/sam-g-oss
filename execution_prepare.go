@@ -117,6 +117,7 @@ func (r *Runtime) prepareMain(ctx context.Context, x *execution, w *worker) erro
 	if t.model.NoImages {
 		input = withoutImages(input)
 	}
+	input = capRequestFiles(input)
 	if len(notes) > 0 {
 		need, limit := estimateRequest(t.instructions, input, t.toolList), budgets(t.model, t.cfg).input
 		if need > limit {

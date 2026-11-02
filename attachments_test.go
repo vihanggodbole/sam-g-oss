@@ -72,3 +72,15 @@ func TestReadAttachesPDF(t *testing.T) {
 		t.Error("a call that cannot carry files attached one anyway")
 	}
 }
+
+// Past the per-request budget, older files become notes and the newest stay.
+func TestCapRequestFilesKeepsNewest(t *testing.T) {
+	big := func(name string) json.RawMessage {
+		out := callOutput{parts: []outputPart{{Type: "input_text", Text: "see"}, {Type: "input_file", Filename: name, FileData: "data:application/pdf;base64," + strings.Repeat("A", 12<<20)}}}
+		return json.RawMessage(mustJSON(map[string]any{"type": "function_call_output", "call_id": name, "output": out}))
+	}
+	got := capRequestFiles([]json.RawMessage{big("old.pdf"), big("new.pdf")})
+	if !strings.Contains(string(got[0]), `"output":"see [file old.pdf]"`) || !strings.Contains(string(got[1]), "base64") {
+		t.Fatalf("old: %.80s… new: %.80s…", got[0], got[1])
+	}
+}
